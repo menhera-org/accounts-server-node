@@ -129,6 +129,7 @@ app.post('/change-password', async (req, res) => {
     res.redirect('/change-password?error=invalid-username');
     return;
   }
+  let stdout = '';
   try {
     const proc = spawn('sudo', ['-H', '-u', username, 'passwd']);
     proc.stdin.write(`${currentPassword}\n`);
@@ -137,6 +138,7 @@ app.post('/change-password', async (req, res) => {
     proc.stdin.end();
     proc.stdout.on('data', (data) => {
       console.log(`stdout: ${data}`);
+      stdout += data;
     });
     proc.stderr.on('data', (data) => {
       console.log(`stderr: ${data}`);
@@ -156,7 +158,8 @@ app.post('/change-password', async (req, res) => {
     return;
   } catch (e) {
     console.error(e);
-    res.redirect('/change-password?error=change-password-error');
+    const message = encodeURIComponent(stdout);
+    res.redirect('/change-password?error=change-password-error&message=' + message);
     return;
   }
 });
