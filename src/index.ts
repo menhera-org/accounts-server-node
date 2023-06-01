@@ -57,6 +57,20 @@ const userExists = async (username: string) => {
   });
 };
 
+const userInGroup = async (username: string, group: string) => {
+  return new Promise<boolean>((resolve, reject) => {
+    execFile('id', [username], (error, stdout) => {
+      if (error) {
+        resolve(false);
+        return;
+      }
+      const groups = stdout.match(/groups=[0-9]+\((.*?)\)(?:,[0-9]+\((.*?)\))/)?.slice(1) ?? [];
+      resolve(groups.includes(group));
+    });
+  });
+};
+
+const ADMIN_GROUP = process.env.ADMIN_GROUP || 'sudo';
 const aliasesPath = process.env.ALIASES_PATH;
 
 const getAliases = async () => {
@@ -149,10 +163,20 @@ app.get('/get-username', (req, res) => {
     });
     return;
   }
-  res.json({
-    logged_in: true,
-    username: req.session.username,
-  });
+  const username = req.session.username;
+  userInGroup(username, ADMIN_GROUP).then((isAdmin) => {
+    res.json({
+      logged_in: true,
+      username,
+      is_admin: isAdmin,
+    });
+  }).catch((e) => {
+    console.error(e);
+    res.json({
+      logged_in: false,
+      username: null,
+    });
+  })
 });
 
 app.post('/change-password', async (req, res) => {
