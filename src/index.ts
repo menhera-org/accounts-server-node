@@ -169,14 +169,26 @@ app.post('/auth', async (req, res) => {
     res.redirect('/login');
     return;
   }
-  const session = req.session;
-  session.username = username;
-  session.save((err) => {
+  req.session.regenerate(function (err) {
     if (err) {
       console.error(err);
+      res.redirect('/login');
+      return;
     }
-    res.redirect('/');
-  })
+
+    req.session.username = username;
+
+    // save the session before redirection to ensure page
+    // load does not happen before session is saved
+    req.session.save(function (err) {
+      if (err) {
+        console.error(err);
+        res.redirect('/login');
+        return;
+      }
+      res.redirect('/');
+    });
+  });
 });
 
 app.listen(PORT, () => {
