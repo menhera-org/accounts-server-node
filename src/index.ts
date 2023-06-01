@@ -18,7 +18,8 @@
 */
 
 import path from 'node:path';
-import { ChildProcess, spawn } from 'node:child_process';
+import * as url from 'node:url';
+import { spawn } from 'node:child_process';
 import express from 'express';
 import 'dotenv/config';
 import session from 'express-session';
@@ -29,6 +30,8 @@ declare module 'express-session' {
     username: string;
   }
 }
+
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 const app = express();
 
