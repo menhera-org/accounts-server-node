@@ -25,7 +25,7 @@ import express from 'express';
 import 'dotenv/config';
 import session from 'express-session';
 import { pamAuthenticatePromise, pamErrors, PamError } from 'node-linux-pam';
-import { Aliases } from './Aliases';
+import { Aliases } from './Aliases.js';
 
 declare module 'express-session' {
   interface SessionData {
