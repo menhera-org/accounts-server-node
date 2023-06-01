@@ -548,11 +548,11 @@ app.post('/list-remove-user', async (req, res) => {
       return;
     }
     const listName = String(req.body.listName).toLowerCase();
-    const removeUserName = String(req.body.removeUserName).toLowerCase();
+    const removeUsername = String(req.body.removeUsername).toLowerCase();
     const aliasesStr = await getAliases();
     const aliases = new Aliases(aliasesStr);
     const members = aliases.getMailingListMembers(listName);
-    if (!members.includes(removeUserName)) {
+    if (!members.includes(removeUsername)) {
       res.status(400).json({
         error: 'user-not-found',
       });
@@ -563,7 +563,7 @@ app.post('/list-remove-user', async (req, res) => {
       aliases.removeMailingList(listName);
       listRemoved = true;
     } else {
-      aliases.removeMailingListMember(listName, removeUserName);
+      aliases.removeMailingListMember(listName, removeUsername);
     }
     await updateAliases(aliases.toString());
     let users: string[] = [];
