@@ -153,41 +153,41 @@ app.post('/change-password', async (req, res) => {
   }
 });
 
-app.post('/auth', async (req, res) => {
+app.post('/auth', (req, res) => {
   if (req.session.username) {
     res.redirect('/');
     return;
   }
   const username = req.body.username;
   const password = req.body.password;
-  try {
-    await pamAuthenticatePromise({
-      username,
-      password,
-    });
-  } catch (e) {
-    res.redirect('/login');
-    return;
-  }
-  req.session.regenerate(function (err) {
-    if (err) {
-      console.error(err);
-      res.redirect('/login');
-      return;
-    }
-
-    req.session.username = username;
-
-    // save the session before redirection to ensure page
-    // load does not happen before session is saved
-    req.session.save(function (err) {
+  pamAuthenticatePromise({
+    username,
+    password,
+  }).then(() => {
+    req.session.regenerate(function (err) {
       if (err) {
         console.error(err);
         res.redirect('/login');
         return;
       }
-      res.redirect('/');
+
+      req.session.username = username;
+
+      // save the session before redirection to ensure page
+      // load does not happen before session is saved
+      req.session.save(function (err) {
+        if (err) {
+          console.error(err);
+          res.redirect('/login');
+          return;
+        }
+        res.redirect('/');
+      });
     });
+
+  }).catch((e) => {
+    res.redirect('/login');
+    return;
   });
 });
 
