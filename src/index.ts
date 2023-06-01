@@ -130,9 +130,10 @@ app.post('/change-password', async (req, res) => {
     return;
   }
   try {
-    const proc = spawn('/usr/sbin/chpasswd', []);
-    const passwordLine = `${username}:${newPassword1}\n`;
-    proc.stdin.write(passwordLine);
+    const proc = spawn('sudo', ['-H', '-u', username, 'passwd']);
+    proc.stdin.write(`${currentPassword}\n`);
+    proc.stdin.write(`${newPassword1}\n`);
+    proc.stdin.write(`${newPassword2}\n`);
     proc.stdin.end();
     proc.stdout.on('data', (data) => {
       console.log(`stdout: ${data}`);
@@ -149,7 +150,7 @@ app.post('/change-password', async (req, res) => {
       });
     });
     if (code != 0) {
-      throw new Error('chpasswd failed');
+      throw new Error('passwd failed');
     }
     res.redirect('/');
     return;
