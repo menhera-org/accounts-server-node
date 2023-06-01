@@ -1,0 +1,28 @@
+{
+  "name": "@menhera/accounts-server-node",
+  "version": "0.1.0",
+  "description": "Manage accounts using PAM",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/menhera-org/accounts-server-node.git"
+  },
+  "author": "Menhera.org",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/menhera-org/accounts-server-node/issues"
+  },
+  "type": "module",
+  "homepage": "https://github.com/menhera-org/accounts-server-node#readme",
+  "devDependencies": {
+    "@types/node": "^20.2.5",
+    "typescript": "^5.0.4"
+  }
+}
