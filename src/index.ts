@@ -16,3 +16,17 @@
   limitations under the License.
   @license
 */
+
+import path from 'node:path';
+import express from 'express';
+
+const app = express();
+
+const PORT = parseInt(process.env.PORT || '3000', 10);
+
+const staticDir = path.join(__dirname, '../static');
+
+app.get('/', (req, res) => {
+  const topPageFile = path.join(staticDir, 'index.html');
+  res.sendFile(topPageFile);
+});
