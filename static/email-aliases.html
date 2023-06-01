@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Email aliases</title>
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="/assets/main.css">
+  </head>
+  <body>
+    <h1>Email aliases</h1>
+    <p>Signed in as <span id="username"></span></p>
+    <p id="error"></p>
+    <ul>
+      <li><a href="/">Back</a></li>
+      <li><a href="/logout">Log out</a></li>
+    </ul>
+    <div id="aliases"></div>
+    <h2>Add alias</h2>
+    <p>Name: <input id="add_alias_name" type="text"> <button id="add_alias_button">Add</button></p>
+    <script defer>
+      fetch('/get-username')
+      .then(response => response.json())
+      .then(data => {
+        if (!data.logged_in) return;
+        document.getElementById('username').textContent = data.username;
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+
+      async function addAlias(alias) {
+        const response = await fetch('/add-alias', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            aliasName: alias,
+          }),
+        });
+        const data = await response.json();
+        if (data.error) {
+          console.error('Error response:', data);
+          document.getElementById('error').textContent = data.error;
+        } else {
+          renderAliases(data.aliases);
+        }
+      }
+
+      async function removeAlias(alias) {
+        const response = await fetch('/remove-alias', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            aliasName: alias,
+          }),
+        });
+        const data = await response.json();
+        if (data.error) {
+          console.error('Error response:', data);
+          document.getElementById('error').textContent = data.error;
+        } else {
+          renderAliases(data.aliases);
+        }
+      }
+
+      const aliasesElement = document.getElementById('aliases');
+      function renderAliases(aliases) {
+        aliasesElement.textContent = '';
+        for (const alias of aliases) {
+          const aliasElement = document.createElement('div');
+          const aliasLabel = document.createElement('span');
+          aliasLabel.textContent = alias;
+          aliasElement.appendChild(aliasLabel);
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'Delete';
+          deleteButton.onclick = () => {
+            removeAlias(alias).catch((e) => {
+              console.error(e);
+              const message = String(e.message ?? e);
+              document.getElementById('error').textContent = message;
+            });
+          };
+          aliasElement.appendChild(deleteButton);
+          aliasesElement.appendChild(aliasElement);
+        }
+      }
+
+      const addAliasButton = document.getElementById('add_alias_button');
+      const addAliasName = document.getElementById('add_alias_name');
+      addAliasButton.onclick = async () => {
+        const alias = addAliasName.value;
+        addAliasName.value = '';
+        try {
+          await addAlias(alias);
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      fetch('/get-aliases')
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.error('Error response:', data);
+          document.getElementById('error').textContent = data.error;
+        } else {
+          renderAliases(data.aliases);
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+    </script>
+  </body>
+</html>

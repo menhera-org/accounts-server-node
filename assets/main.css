@@ -6,3 +6,11 @@ body {
 #error {
   color: red;
 }
+
+#aliases > div {
+  padding: .5em;
+}
+
+#aliases > div:not(:first-child) {
+  border-block-start: 1px solid #ccc;
+}

@@ -112,6 +112,14 @@ app.get('/', (req, res) => {
   res.sendFile('index.html', { root: staticDir });
 });
 
+app.get('/email-aliases', (req, res) => {
+  const session = req.session;
+  if (!session.username) {
+    res.redirect('/login');
+  }
+  res.sendFile('email-aliases.html', { root: staticDir });
+});
+
 app.get('/login', (req, res) => {
   if (req.session.username) {
     res.redirect('/');
@@ -259,6 +267,12 @@ app.post('/add-alias', async (req, res) => {
       return;
     }
     const aliasName = req.body.aliasName;
+    if (await userExists(aliasName)) {
+      res.status(400).json({
+        error: 'user-exists',
+      });
+      return;
+    }
     const username = req.session.username;
     const aliasesStr = await getAliases();
     const aliases = new Aliases(aliasesStr);
