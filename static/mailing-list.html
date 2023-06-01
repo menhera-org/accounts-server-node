@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Mailing list</title>
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="/assets/main.css">
+  </head>
+  <body>
+    <h1 id="heading">Mailing list</h1>
+    <p>Signed in as <span id="username"></span></p>
+    <p id="error"></p>
+    <ul>
+      <li><a href="/">Top</a></li>
+      <li><a href="/mailing-lists">Back to lists</a></li>
+      <li><a href="/logout">Log out</a></li>
+    </ul>
+    <ul id="members"></ul>
+    <script defer>
+      fetch('/get-username')
+      .then(response => response.json())
+      .then(data => {
+        if (!data.logged_in) return;
+        document.getElementById('username').textContent = data.username;
+        if (data.is_admin) {
+          document.getElementById('username').textContent += ' (admin)';
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+
+      async function createList(listName, members) {
+        const response = await fetch('/create-list', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            listName,
+            users: members,
+          }),
+        });
+        const data = await response.json();
+        if (data.error) {
+          console.error('Error response:', data);
+          document.getElementById('error').textContent = data.error;
+        } else {
+          renderLists(data.lists);
+        }
+      }
+
+      const membersElement = document.getElementById('members');
+      function renderList(listName, members) {
+        const title = `Mailing list: ${listName}`;
+        document.title = title;
+        document.getElementById('heading').textContent = title;
+        membersElement.textContent = '';
+        for (const member of members) {
+          const memberElement = document.createElement('li');
+          memberElement.textContent = member;
+          membersElement.appendChild(memberElement);
+        }
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const listName = params.get('list');
+      fetch('/get-list-members?listName=' + encodeURIComponent(listName))
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.error('Error response:', data);
+          document.getElementById('error').textContent = data.error;
+        } else {
+          renderList(data.listName, data.users);
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Mailing lists</title>
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="/assets/main.css">
+  </head>
+  <body>
+    <h1>Mailing lists</h1>
+    <p>Signed in as <span id="username"></span></p>
+    <p id="error"></p>
+    <ul>
+      <li><a href="/">Back</a></li>
+      <li><a href="/logout">Log out</a></li>
+    </ul>
+    <ul id="lists"></ul>
+    <section hidden id="create-list">
+      <h2>Create list</h2>
+      <p>Name: <input id="create_list_name" type="text"></p>
+      <p>Members (comma-separated): <input id="create_list_members" type="text"></p>
+      <p><button id="create_list_button">Add</button></p>
+    </section>
+    <script defer>
+      fetch('/get-username')
+      .then(response => response.json())
+      .then(data => {
+        if (!data.logged_in) return;
+        document.getElementById('username').textContent = data.username;
+        if (data.is_admin) {
+          document.getElementById('username').textContent += ' (admin)';
+          document.getElementById('create-list').hidden = false;
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+
+      async function createList(listName, members) {
+        const response = await fetch('/create-list', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            listName,
+            users: members,
+          }),
+        });
+        const data = await response.json();
+        if (data.error) {
+          console.error('Error response:', data);
+          document.getElementById('error').textContent = data.error;
+        } else {
+          renderLists(data.lists);
+        }
+      }
+
+      const listsElement = document.getElementById('lists');
+      function renderLists(lists) {
+        listsElement.textContent = '';
+        for (const list of lists) {
+          const listElement = document.createElement('li');
+          const linkElement = document.createElement('a');
+          linkElement.textContent = list;
+          linkElement.href = '/mailing-list?list=' + encodeURIComponent(list);
+          listElement.appendChild(linkElement);
+          listsElement.appendChild(listElement);
+        }
+      }
+
+      const createListButton = document.getElementById('create_list_button');
+      const createListName = document.getElementById('create_list_name');
+      const createListMembers = document.getElementById('create_list_members');
+      createListButton.onclick = async () => {
+        const listName = createListName.value.trim();
+        const members = createListMembers.value.trim();
+        if (listName == '' || members == '') return;
+        createListName.value = '';
+        createListMembers.value = '';
+        try {
+          await createList(listName, members);
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      fetch('/get-lists')
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.error('Error response:', data);
+          document.getElementById('error').textContent = data.error;
+        } else {
+          renderLists(data.lists);
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+    </script>
+  </body>
+</html>

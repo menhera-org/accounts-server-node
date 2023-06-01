@@ -70,8 +70,17 @@ const userInGroup = async (username: string, group: string) => {
   });
 };
 
+const validateAliasName = (aliasName: string) => {
+  return !!aliasName.match(/^[a-z][a-z0-9.-]{0,31}$/);
+};
+
 const ADMIN_GROUP = process.env.ADMIN_GROUP || 'sudo';
 const aliasesPath = process.env.ALIASES_PATH;
+const ALL_LISTS_USER = process.env.ALL_LISTS_USER || 'root';
+
+const userIsAdmin = async (username: string) => {
+  return userInGroup(username, ADMIN_GROUP);
+};
 
 const getAliases = async () => {
   if (!aliasesPath) {
@@ -122,6 +131,7 @@ app.get('/', (req, res) => {
   const session = req.session;
   if (!session.username) {
     res.redirect('/login');
+    return;
   }
   res.sendFile('index.html', { root: staticDir });
 });
@@ -130,6 +140,7 @@ app.get('/email-aliases', (req, res) => {
   const session = req.session;
   if (!session.username) {
     res.redirect('/login');
+    return;
   }
   res.sendFile('email-aliases.html', { root: staticDir });
 });
@@ -152,7 +163,30 @@ app.get('/logout', (req, res) => {
 });
 
 app.get('/change-password', (req, res) => {
+  const session = req.session;
+  if (!session.username) {
+    res.redirect('/login');
+    return;
+  }
   res.sendFile('change-password.html', { root: staticDir });
+});
+
+app.get('/mailing-lists', (req, res) => {
+  const session = req.session;
+  if (!session.username) {
+    res.redirect('/login');
+    return;
+  }
+  res.sendFile('mailing-lists.html', { root: staticDir });
+});
+
+app.get('/mailing-list', (req, res) => {
+  const session = req.session;
+  if (!session.username) {
+    res.redirect('/login');
+    return;
+  }
+  res.sendFile('mailing-list.html', { root: staticDir });
 });
 
 app.get('/get-username', (req, res) => {
@@ -291,7 +325,7 @@ app.post('/add-alias', async (req, res) => {
       return;
     }
     const aliasName = String(req.body.aliasName).toLowerCase();
-    if (!aliasName.match(/^[a-z][a-z0-9.-]{0,31}$/)) {
+    if (!validateAliasName(aliasName)) {
       res.status(400).json({
         error: 'invalid-alias-name',
       });
@@ -359,11 +393,135 @@ app.get('/get-aliases', async (req, res) => {
     const username = req.session.username;
     const aliasesStr = await getAliases();
     const aliases = new Aliases(aliasesStr);
-    console.log(aliases);
     const userAliases = aliases.getPersonalAliases(username);
     res.json({
       error: null,
       aliases: userAliases,
+    });
+  } catch (e) {
+    res.status(500).json({
+      error: 'internal-error',
+    });
+    return;
+  }
+});
+
+app.post('/create-list', async (req, res) => {
+  try {
+    if (!req.session.username) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const username = req.session.username;
+    const isAdmin = await userIsAdmin(username);
+    if (!isAdmin) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const listName = String(req.body.listName).toLowerCase();
+    if (!validateAliasName(listName)) {
+      res.status(400).json({
+        error: 'invalid-list-name',
+      });
+      return;
+    }
+    const usersStr = req.body.users as string;
+    const users = usersStr.split(',').map((user) => user.trim()).filter((user) => user != '');
+    if (!users.includes(ALL_LISTS_USER)) {
+      users.push(ALL_LISTS_USER);
+    }
+    if (users.length < 2) {
+      res.status(400).json({
+        error: 'invalid-users-count',
+      });
+      return;
+    }
+    const aliasesStr = await getAliases();
+    const aliases = new Aliases(aliasesStr);
+    for (const user in users) {
+      if (aliases.aliasExists(user)) {
+        continue;
+      }
+      if (!await userExists(user)) {
+        res.status(400).json({
+          error: 'user-not-found',
+          user,
+        });
+        return;
+      }
+    }
+    aliases.createMailingList(listName, users);
+    await updateAliases(aliases.toString());
+    const lists = aliases.getMailingLists();
+    res.json({
+      error: null,
+      listName,
+      users,
+      lists,
+    });
+  } catch (e) {
+    res.status(500).json({
+      error: 'internal-error',
+    });
+    return;
+  }
+});
+
+app.get('/get-lists', async (req, res) => {
+  try {
+    if (!req.session.username) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const aliasesStr = await getAliases();
+    const aliases = new Aliases(aliasesStr);
+    const lists = aliases.getMailingLists();
+    res.json({
+      error: null,
+      lists,
+    });
+  } catch (e) {
+    res.status(500).json({
+      error: 'internal-error',
+    });
+    return;
+  }
+});
+
+app.get('/get-list-members', async (req, res) => {
+  try {
+    if (!req.session.username) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const listName = req.query.listName as string;
+    if (!listName) {
+      res.status(400).json({
+        error: 'invalid-list-name',
+      });
+      return;
+    }
+    const aliasesStr = await getAliases();
+    const aliases = new Aliases(aliasesStr);
+    if (!aliases.mailingListExists(listName)) {
+      res.status(400).json({
+        error: 'list-not-found',
+      });
+      return;
+    }
+    const users = aliases.getMailingListMembers(listName);
+    res.json({
+      error: null,
+      listName,
+      users,
     });
   } catch (e) {
     res.status(500).json({

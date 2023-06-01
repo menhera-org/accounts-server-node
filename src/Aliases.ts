@@ -112,6 +112,44 @@ export class Aliases {
     return this.userAlternativeNames[user] ?? [];
   }
 
+  public createMailingList(alias: string, users: string[]) {
+    if (alias in this.aliases) {
+      throw new Error('Alias already exists');
+    }
+    if (users.length < 2) {
+      throw new Error('Mailing list must have at least two members');
+    }
+    this.aliases[alias] = users;
+  }
+
+  public getMailingLists(): string[] {
+    const lists: string[] = [];
+    for (const alias in this.aliases) {
+      const users = this.aliases[alias] ?? [];
+      if (users.length >= 2) {
+        lists.push(alias);
+      }
+    }
+    return lists;
+  }
+
+  public getMailingListMembers(alias: string): string[] {
+    const users = this.aliases[alias] ?? [];
+    if (users.length < 2) {
+      throw new Error('Alias is not a mailing list');
+    }
+    return users;
+  }
+
+  public mailingListExists(alias: string): boolean {
+    const users = this.aliases[alias] ?? [];
+    return users.length >= 2;
+  }
+
+  public aliasExists(alias: string): boolean {
+    return alias in this.aliases;
+  }
+
   public toString() {
     this.encode();
     return this.contents;
