@@ -19,17 +19,52 @@
 
 import path from 'node:path';
 import * as url from 'node:url';
-import { spawn } from 'node:child_process';
+import * as fs from 'node:fs/promises';
+import { spawn, execFile } from 'node:child_process';
 import express from 'express';
 import 'dotenv/config';
 import session from 'express-session';
 import { pamAuthenticatePromise, pamErrors, PamError } from 'node-linux-pam';
+import { Aliases } from './Aliases';
 
 declare module 'express-session' {
   interface SessionData {
     username: string;
   }
 }
+
+const executePostalias = async (aliasesPath: string) => {
+  return new Promise<void>((resolve, reject) => {
+    execFile('postalias', [aliasesPath], (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+};
+
+const userExists = async (username: string) => {
+  return new Promise<boolean>((resolve, reject) => {
+    execFile('id', [username], (error) => {
+      if (error) {
+        resolve(false);
+        return;
+      }
+      resolve(true);
+    });
+  });
+};
+
+const aliasesPath = process.env.ALIASES_PATH;
+
+const getAliases = async () => {
+  if (!aliasesPath) {
+    throw new Error('ALIASES_PATH is not set');
+  }
+  return fs.readFile(aliasesPath, 'utf-8');
+};
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
@@ -42,6 +77,7 @@ const SECRET = process.env.SECRET;
 if (!SECRET) {
   throw new Error('SECRET is not set');
 }
+
 
 const staticDir = path.join(__dirname, '../static');
 const assetsDir = path.join(__dirname, '../assets');
@@ -204,6 +240,29 @@ app.post('/auth', (req, res) => {
     res.redirect('/login?error=auth-error');
     return;
   });
+});
+
+app.get('/get-aliases', async (req, res) => {
+  try {
+    if (!req.session.username) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const aliasesStr = await getAliases();
+    const aliases = new Aliases(aliasesStr);
+    const userAliases: string[] = [];
+    res.json({
+      error: null,
+      aliases: userAliases,
+    });
+  } catch (e) {
+    res.status(500).json({
+      error: 'internal-error',
+    });
+    return;
+  }
 });
 
 app.listen(PORT, () => {
