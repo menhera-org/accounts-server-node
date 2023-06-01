@@ -52,7 +52,7 @@ app.use('/assets', express.static(assetsDir));
 
 app.use(session({
   secret: SECRET,
-  saveUninitialized: false,
+  saveUninitialized: true,
   cookie: {
     maxAge: SESSION_MAX_AGE,
     secure: true,
