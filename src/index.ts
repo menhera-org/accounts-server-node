@@ -266,7 +266,13 @@ app.post('/add-alias', async (req, res) => {
       });
       return;
     }
-    const aliasName = req.body.aliasName;
+    const aliasName = String(req.body.aliasName).toLowerCase();
+    if (!aliasName.match(/^[a-z][a-z0-9.-]{0,31}$/)) {
+      res.status(400).json({
+        error: 'invalid-alias-name',
+      });
+      return;
+    }
     if (await userExists(aliasName)) {
       res.status(400).json({
         error: 'user-exists',
