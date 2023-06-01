@@ -162,7 +162,7 @@ app.post('/change-password', async (req, res) => {
     console.error(e);
     const stderrLines = stderr.split('\n').map((line) => line.trim()).filter((line) => line != '');
     const lastStderrLine = stderrLines[stderrLines.length - 1] ?? '';
-    const message = encodeURIComponent(`Error: ${stdout.trim()} (${lastStderrLine})})`);
+    const message = encodeURIComponent(`Error: ${stdout.trim()} (${lastStderrLine})`);
     res.redirect('/change-password?error=change-password-error&message=' + message);
     return;
   }
