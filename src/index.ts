@@ -134,6 +134,12 @@ app.post('/change-password', async (req, res) => {
     const passwordLine = `${username}:${newPassword1}\n`;
     proc.stdin.write(passwordLine);
     proc.stdin.end();
+    proc.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+    });
+    proc.stderr.on('data', (data) => {
+      console.log(`stderr: ${data}`);
+    });
     const code = await new Promise<number>((resolve, reject) => {
       proc.on('exit', (code) => {
         resolve(code ?? 1);
