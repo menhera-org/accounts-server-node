@@ -130,6 +130,7 @@ app.post('/change-password', async (req, res) => {
     return;
   }
   let stdout = '';
+  let stderr = '';
   try {
     const proc = spawn('sudo', ['-H', '-u', username, 'passwd']);
     proc.stdin.write(`${currentPassword}\n`);
@@ -142,6 +143,7 @@ app.post('/change-password', async (req, res) => {
     });
     proc.stderr.on('data', (data) => {
       console.log(`stderr: ${data}`);
+      stderr += data;
     });
     const code = await new Promise<number>((resolve, reject) => {
       proc.on('exit', (code) => {
@@ -158,7 +160,9 @@ app.post('/change-password', async (req, res) => {
     return;
   } catch (e) {
     console.error(e);
-    const message = encodeURIComponent(stdout);
+    const stderrLines = stderr.split('\n').map((line) => line.trim()).filter((line) => line != '');
+    const lastStderrLine = stderrLines[stderrLines.length - 1] ?? '';
+    const message = encodeURIComponent(`Error: ${stdout.trim()} (${lastStderrLine})})`);
     res.redirect('/change-password?error=change-password-error&message=' + message);
     return;
   }
