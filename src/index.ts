@@ -18,17 +18,157 @@
 */
 
 import path from 'node:path';
+import { ChildProcess, spawn } from 'node:child_process';
 import express from 'express';
+import 'dotenv/config';
+import session from 'express-session';
+import { pamAuthenticatePromise, pamErrors, PamError } from 'node-linux-pam';
+
+declare module 'express-session' {
+  interface SessionData {
+    username: string;
+  }
+}
 
 const app = express();
 
+const SESSION_MAX_AGE = 1000 * 60 * 60 * 24; // 1 day
+
 const PORT = parseInt(process.env.PORT || '3000', 10);
+const SECRET = process.env.SECRET;
+if (!SECRET) {
+  throw new Error('SECRET is not set');
+}
 
 const staticDir = path.join(__dirname, '../static');
+const assetsDir = path.join(__dirname, '../assets');
+
+app.use(express.urlencoded({ extended: true }));
+
+app.use('/assets', express.static(assetsDir));
+
+app.use(session({
+  secret: SECRET,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: SESSION_MAX_AGE,
+    secure: true,
+  },
+  resave: true,
+}));
 
 app.get('/', (req, res) => {
-  const topPageFile = path.join(staticDir, 'index.html');
-  res.sendFile(topPageFile);
+  const session = req.session;
+  if (!session.username) {
+    res.redirect('/login');
+  }
+  res.sendFile('index.html', { root: staticDir });
+});
+
+app.get('/login', (req, res) => {
+  if (req.session.username) {
+    res.redirect('/');
+    return;
+  }
+  res.sendFile('login.html', { root: staticDir });
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error(err);
+    }
+    res.redirect('/login');
+  });
+});
+
+app.get('/change-password', (req, res) => {
+  res.sendFile('change-password.html', { root: staticDir });
+});
+
+app.get('/get-username', (req, res) => {
+  if (!req.session.username) {
+    res.json({
+      logged_in: false,
+      username: null,
+    });
+    return;
+  }
+  res.json({
+    logged_in: true,
+    username: req.session.username,
+  });
+});
+
+app.post('/change-password', async (req, res) => {
+  if (!req.session.username) {
+    res.redirect('/login');
+    return;
+  }
+  const username = req.session.username;
+  const currentPassword = req.body.currentPassword;
+  const newPassword1 = req.body.newPassword1;
+  const newPassword2 = req.body.newPassword2;
+  try {
+    await pamAuthenticatePromise({
+      username,
+      password: currentPassword,
+    });
+  } catch (e) {
+    res.redirect('/change-password');
+    return;
+  }
+  if (newPassword1 !== newPassword2 || newPassword1.includes('\r') || newPassword1.includes('\n') || newPassword1.includes('\t')) {
+    res.redirect('/change-password');
+    return;
+  }
+  if (username.includes(':')) {
+    res.redirect('/change-password');
+    return;
+  }
+  try {
+    const proc = spawn('chpasswd', []);
+    const passwordLine = `${username}:${newPassword1}\n`;
+    proc.stdin.write(passwordLine);
+    proc.stdin.end();
+    const code = await new Promise<number>((resolve, reject) => {
+      proc.on('exit', (code) => {
+        resolve(code ?? 1);
+      });
+      proc.on('error', (err) => {
+        reject(err);
+      });
+    });
+    if (code != 0) {
+      throw new Error('chpasswd failed');
+    }
+    res.redirect('/');
+    return;
+  } catch (e) {
+    res.redirect('/change-password');
+    return;
+  }
+});
+
+app.post('/auth', async (req, res) => {
+  if (req.session.username) {
+    res.redirect('/');
+    return;
+  }
+  const username = req.body.username;
+  const password = req.body.password;
+  try {
+    await pamAuthenticatePromise({
+      username,
+      password,
+    });
+  } catch (e) {
+    res.redirect('/login');
+    return;
+  }
+  const session = req.session;
+  session.username = username;
+  res.redirect('/');
 });
 
 app.listen(PORT, () => {
