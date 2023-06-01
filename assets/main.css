@@ -14,3 +14,7 @@ body {
 #aliases > div:not(:first-child) {
   border-block-start: 1px solid #ccc;
 }
+
+body:not(.admin) .list-user-remove-button {
+  display: none;
+}

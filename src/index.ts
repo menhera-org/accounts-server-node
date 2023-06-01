@@ -517,11 +517,124 @@ app.get('/get-list-members', async (req, res) => {
       });
       return;
     }
-    const users = aliases.getMailingListMembers(listName);
+    const users = aliases.getMailingListMembers(listName).filter((user) => user != ALL_LISTS_USER);
     res.json({
       error: null,
       listName,
       users,
+    });
+  } catch (e) {
+    res.status(500).json({
+      error: 'internal-error',
+    });
+    return;
+  }
+});
+
+app.post('/list-remove-user', async (req, res) => {
+  try {
+    if (!req.session.username) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const username = req.session.username;
+    const isAdmin = await userIsAdmin(username);
+    if (!isAdmin) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const listName = String(req.body.listName).toLowerCase();
+    const removeUserName = String(req.body.removeUserName).toLowerCase();
+    const aliasesStr = await getAliases();
+    const aliases = new Aliases(aliasesStr);
+    const members = aliases.getMailingListMembers(listName);
+    if (!members.includes(removeUserName)) {
+      res.status(400).json({
+        error: 'user-not-found',
+      });
+      return;
+    }
+    let listRemoved = false;
+    if (members.length <= 2) {
+      aliases.removeMailingList(listName);
+      listRemoved = true;
+    } else {
+      aliases.removeMailingListMember(listName, removeUserName);
+    }
+    await updateAliases(aliases.toString());
+    let users: string[] = [];
+    try {
+      users = aliases.getMailingListMembers(listName).filter((user) => user != ALL_LISTS_USER);
+    } catch (e) {
+      // ignore
+    }
+    const lists = aliases.getMailingLists();
+    res.json({
+      error: null,
+      listName,
+      listRemoved,
+      users,
+      lists,
+    });
+  } catch (e) {
+    res.status(500).json({
+      error: 'internal-error',
+    });
+    return;
+  }
+});
+
+app.post('/list-add-user', async (req, res) => {
+  try {
+    if (!req.session.username) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const username = req.session.username;
+    const isAdmin = await userIsAdmin(username);
+    if (!isAdmin) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const listName = String(req.body.listName).toLowerCase();
+    const addUsername = String(req.body.addUsername).toLowerCase();
+    const aliasesStr = await getAliases();
+    const aliases = new Aliases(aliasesStr);
+    if (!aliases.aliasExists(addUsername) && !await userExists(addUsername)) {
+      res.status(400).json({
+        error: 'user-not-found',
+      });
+      return;
+    }
+    const members = aliases.getMailingListMembers(listName);
+    if (members.includes(addUsername)) {
+      res.status(400).json({
+        error: 'user-already-added',
+      });
+      return;
+    }
+    aliases.addMailingListMember(listName, addUsername);
+    await updateAliases(aliases.toString());
+    let users: string[] = [];
+    try {
+      users = aliases.getMailingListMembers(listName).filter((user) => user != ALL_LISTS_USER);
+    } catch (e) {
+      // ignore
+    }
+    const lists = aliases.getMailingLists();
+    res.json({
+      error: null,
+      listName,
+      users,
+      lists,
     });
   } catch (e) {
     res.status(500).json({

@@ -141,6 +141,43 @@ export class Aliases {
     return users;
   }
 
+  public removeMailingListMember(alias: string, user: string) {
+    const users = this.aliases[alias] ?? [];
+    if (users.length < 2) {
+      throw new Error('Alias is not a mailing list');
+    }
+    const index = users.indexOf(user);
+    if (index < 0) {
+      throw new Error('User is not a member of the mailing list');
+    }
+    users.splice(index, 1);
+    if (users.length < 2) {
+      delete this.aliases[alias];
+      return;
+    }
+    this.aliases[alias] = users;
+  }
+
+  public addMailingListMember(alias: string, user: string) {
+    const users = this.aliases[alias] ?? [];
+    if (users.length < 2) {
+      throw new Error('Alias is not a mailing list');
+    }
+    if (users.indexOf(user) >= 0) {
+      throw new Error('User is already a member of the mailing list');
+    }
+    users.push(user);
+    this.aliases[alias] = users;
+  }
+
+  public removeMailingList(alias: string) {
+    const users = this.aliases[alias] ?? [];
+    if (users.length < 2) {
+      throw new Error('Alias is not a mailing list');
+    }
+    delete this.aliases[alias];
+  }
+
   public mailingListExists(alias: string): boolean {
     const users = this.aliases[alias] ?? [];
     return users.length >= 2;
