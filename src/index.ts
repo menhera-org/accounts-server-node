@@ -118,19 +118,19 @@ app.post('/change-password', async (req, res) => {
       password: currentPassword,
     });
   } catch (e) {
-    res.redirect('/change-password');
+    res.redirect('/change-password?error=auth-error');
     return;
   }
   if (newPassword1 !== newPassword2 || newPassword1.includes('\r') || newPassword1.includes('\n') || newPassword1.includes('\t')) {
-    res.redirect('/change-password');
+    res.redirect('/change-password?error=invalid-password');
     return;
   }
   if (username.includes(':')) {
-    res.redirect('/change-password');
+    res.redirect('/change-password?error=invalid-username');
     return;
   }
   try {
-    const proc = spawn('chpasswd', []);
+    const proc = spawn('/usr/sbin/chpasswd', []);
     const passwordLine = `${username}:${newPassword1}\n`;
     proc.stdin.write(passwordLine);
     proc.stdin.end();
@@ -148,7 +148,8 @@ app.post('/change-password', async (req, res) => {
     res.redirect('/');
     return;
   } catch (e) {
-    res.redirect('/change-password');
+    console.error(e);
+    res.redirect('/change-password?error=change-password-error');
     return;
   }
 });
