@@ -171,7 +171,12 @@ app.post('/auth', async (req, res) => {
   }
   const session = req.session;
   session.username = username;
-  res.redirect('/');
+  session.save((err) => {
+    if (err) {
+      console.error(err);
+    }
+    res.redirect('/');
+  })
 });
 
 app.listen(PORT, () => {
