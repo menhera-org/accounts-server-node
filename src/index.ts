@@ -57,7 +57,7 @@ app.use(session({
     maxAge: SESSION_MAX_AGE,
     secure: true,
   },
-  resave: true,
+  resave: false,
 }));
 
 app.get('/', (req, res) => {
