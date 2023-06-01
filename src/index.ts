@@ -175,7 +175,7 @@ app.post('/auth', (req, res) => {
     req.session.regenerate(function (err) {
       if (err) {
         console.error(err);
-        res.redirect('/login');
+        res.redirect('/login?error=internal-error');
         return;
       }
 
@@ -186,7 +186,7 @@ app.post('/auth', (req, res) => {
       req.session.save(function (err) {
         if (err) {
           console.error(err);
-          res.redirect('/login');
+          res.redirect('/login?error=internal-error');
           return;
         }
         res.redirect('/');
@@ -194,7 +194,7 @@ app.post('/auth', (req, res) => {
     });
 
   }).catch((e) => {
-    res.redirect('/login');
+    res.redirect('/login?error=auth-error');
     return;
   });
 });
