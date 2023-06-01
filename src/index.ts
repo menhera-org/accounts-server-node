@@ -66,6 +66,14 @@ const getAliases = async () => {
   return fs.readFile(aliasesPath, 'utf-8');
 };
 
+const updateAliases = async (aliases: string) => {
+  if (!aliasesPath) {
+    throw new Error('ALIASES_PATH is not set');
+  }
+  await fs.writeFile(aliasesPath, aliases);
+  await executePostalias(aliasesPath);
+};
+
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 const app = express();
@@ -242,6 +250,60 @@ app.post('/auth', (req, res) => {
   });
 });
 
+app.post('/add-alias', async (req, res) => {
+  try {
+    if (!req.session.username) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const aliasName = req.body.aliasName;
+    const username = req.session.username;
+    const aliasesStr = await getAliases();
+    const aliases = new Aliases(aliasesStr);
+    aliases.addPersonalAlias(username, aliasName);
+    await updateAliases(aliases.toString());
+    const userAliases = aliases.getPersonalAliases(username);
+    res.json({
+      error: null,
+      aliases: userAliases,
+    });
+  } catch (e) {
+    res.status(500).json({
+      error: 'internal-error',
+    });
+    return;
+  }
+});
+
+app.post('/remove-alias', async (req, res) => {
+  try {
+    if (!req.session.username) {
+      res.status(401).json({
+        error: 'unauthorized',
+      });
+      return;
+    }
+    const aliasName = req.body.aliasName;
+    const username = req.session.username;
+    const aliasesStr = await getAliases();
+    const aliases = new Aliases(aliasesStr);
+    aliases.removePersonalAlias(username, aliasName);
+    await updateAliases(aliases.toString());
+    const userAliases = aliases.getPersonalAliases(username);
+    res.json({
+      error: null,
+      aliases: userAliases,
+    });
+  } catch (e) {
+    res.status(500).json({
+      error: 'internal-error',
+    });
+    return;
+  }
+});
+
 app.get('/get-aliases', async (req, res) => {
   try {
     if (!req.session.username) {
@@ -250,9 +312,10 @@ app.get('/get-aliases', async (req, res) => {
       });
       return;
     }
+    const username = req.session.username;
     const aliasesStr = await getAliases();
     const aliases = new Aliases(aliasesStr);
-    const userAliases: string[] = [];
+    const userAliases = aliases.getPersonalAliases(username);
     res.json({
       error: null,
       aliases: userAliases,

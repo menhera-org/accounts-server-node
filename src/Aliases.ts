@@ -89,6 +89,23 @@ export class Aliases {
     this.userAlternativeNames[user] = altNames;
   }
 
+  public removePersonalAlias(user: string, alias: string) {
+    if (!(alias in this.aliases)) {
+      return;
+    }
+    const users = this.aliases[alias] ?? [];
+    if (users.length != 1 || users[0] != user) {
+      throw new Error('Alias is not owned by user');
+    }
+    delete this.aliases[alias];
+    const altNames = this.userAlternativeNames[user] ?? [];
+    const index = altNames.indexOf(alias);
+    if (index >= 0) {
+      altNames.splice(index, 1);
+    }
+    this.userAlternativeNames[user] = altNames;
+  }
+
   public getPersonalAliases(user: string): string[] {
     return this.userAlternativeNames[user] ?? [];
   }
