@@ -329,6 +329,7 @@ app.get('/get-aliases', async (req, res) => {
     const username = req.session.username;
     const aliasesStr = await getAliases();
     const aliases = new Aliases(aliasesStr);
+    console.log(aliases);
     const userAliases = aliases.getPersonalAliases(username);
     res.json({
       error: null,

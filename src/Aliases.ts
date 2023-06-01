@@ -32,7 +32,7 @@ export class Aliases {
     const lines = this.contents.split('\n')
     .map((line) => line.trimEnd())
     .filter((line) => {
-      return !line.match(/^\s*#/) && line != '';
+      return (!line.match(/^\s*#/)) && line != '';
     });
     const logicalLines: string[] = [];
     for (const line of lines) {
@@ -42,6 +42,8 @@ export class Aliases {
         } else {
           throw new Error('Invalid line');
         }
+      } else {
+        logicalLines.push(line);
       }
     }
     const aliases: Record<string, string[]> = {};
