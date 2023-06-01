@@ -30,3 +30,7 @@ app.get('/', (req, res) => {
   const topPageFile = path.join(staticDir, 'index.html');
   res.sendFile(topPageFile);
 });
+
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
