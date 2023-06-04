@@ -50,6 +50,12 @@ export const getConfiguration = async (): Promise<Configuration> => {
     cookies: {
       keys: cookiesKeys,
     },
+    scopes: [
+      "openid",
+      "offline_access",
+      "email",
+      "email_verified",
+    ],
     async findAccount(ctx, id) {
       if (await userExists(id)) {
         return {
@@ -58,6 +64,7 @@ export const getConfiguration = async (): Promise<Configuration> => {
             return {
               sub: id,
               email: `${id}@menhera.org`,
+              email_verified: true,
             };
           },
         }
