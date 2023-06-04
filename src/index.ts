@@ -34,7 +34,7 @@ createApp().then(async (app) => {
   const provider = await getProvider();
   app.use('/oidc', provider.callback());
 
-  defineRoutes(app);
+  defineRoutes(app, provider);
   defineOidcRoutes(app, provider);
 
   app.listen(PORT, () => {

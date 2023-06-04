@@ -18,17 +18,22 @@
 */
 
 import { spawn } from 'node:child_process';
-import { Express } from 'express';
+import { Express, Request, Response } from 'express';
 import { pamAuthenticatePromise } from 'node-linux-pam';
 import { Aliases } from './Aliases.js';
 import { urlencodedParser } from './middlewares.js';
 import { STATIC_DIR } from './base-path.js';
 import { userExists, userInGroup, validateAliasName, getAliases, updateAliases, userIsAdmin } from './system.js';
 import { ADMIN_GROUP, ALL_LISTS_USER } from './defs.js';
+import Provider from 'oidc-provider';
 
 const staticDir = STATIC_DIR;
 
-export const defineRoutes = async (app: Express) => {
+export const defineRoutes = async (app: Express, provider: Provider) => {
+  const getContext = (req: Request, res: Response) => {
+    return provider.app.createContext(req, res);
+  };
+
   app.get('/', (req, res) => {
     const session = req.session;
     if (!session.username) {

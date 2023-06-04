@@ -31,6 +31,7 @@ export const createApp = async (): Promise<Express> => {
   app.use('/assets', express.static(ASSETS_DIR));
 
   app.use(session({
+    name: 'menhera.sid',
     secret: SECRET as string,
     saveUninitialized: true,
     cookie: {
