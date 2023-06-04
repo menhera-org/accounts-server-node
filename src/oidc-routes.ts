@@ -24,8 +24,8 @@ import { pamAuthenticatePromise } from "node-linux-pam";
 import Provider, { InteractionResults } from "oidc-provider";
 
 export const defineOidcRoutes = (app: Express, provider: Provider) => {
-  app.get('/interaction/:uid', async (req, res) => {
-    if (req.session.username && req.params.uid == req.session.username) {
+  app.get('/interaction/:uid', async (req, res, next) => {
+    if (req.session.username) {
       const result = {
         login: {
           accountId: req.session.username,
@@ -39,7 +39,12 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
     if (name == 'login') {
       res.sendFile('interaction-login.html', { root: STATIC_DIR });
       return;
+    } else if (name == 'consent') {
+      res.sendFile('interaction-consent.html', { root: STATIC_DIR });
+      return;
     }
+
+    next(new Error('invalid interaction'));
   });
 
   app.post('/interaction/:uid/login', urlencodedParser, (req, res) => {
