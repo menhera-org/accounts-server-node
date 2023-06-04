@@ -19,7 +19,7 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { Configuration } from "oidc-provider";
+import { Configuration, AccountClaims } from "oidc-provider";
 import { userExists } from "../system.js";
 import { BASE_PATH } from "../base-path.js";
 
@@ -46,6 +46,7 @@ export const getConfiguration = async (): Promise<Configuration> => {
     jwks,
     features: {
       devInteractions: { enabled: false },
+      clientCredentials: { enabled: true },
     },
     cookies: {
       keys: cookiesKeys,
@@ -54,40 +55,63 @@ export const getConfiguration = async (): Promise<Configuration> => {
       "openid",
       "offline_access",
       "email",
-      "email_verified",
       "profile",
     ],
+    clientBasedCORS(ctx, origin, client) {
+      return true;
+    },
     async findAccount(ctx, id) {
       if (await userExists(id)) {
         return {
           accountId: id,
-          async claims() {
-            return {
-              sub: id,
-              name: id,
+          async claims(_use, scope) {
+            const email = {
               email: `${id}@menhera.org`,
               email_verified: true,
             };
+            const profile = {
+              name: id,
+            };
+            const accountInfo: AccountClaims = {
+              sub: id,
+            };
+            const scopes = scope.split(" ");
+            if (scopes.includes('email')) {
+              Object.assign(accountInfo, email);
+            }
+            if (scopes.includes('profile')) {
+              Object.assign(accountInfo, profile);
+            }
+            return accountInfo;
           },
         }
       }
-      return {
-        accountId: id,
-        async claims() {
-          return {
-            sub: id,
-          };
-        },
-      };
+      return undefined;
     },
     pkce: {
       methods: ["S256"],
       required: () => false,
     },
+    claims: {
+      email: ["email", "email_verified"],
+      profile: ["name"],
+    },
     interactions: {
       url(ctx, interaction) {
         return `/interaction/${interaction.uid}`;
       },
-    }
+    },
+    ttl: {
+      AccessToken: 60 * 60 * 24 * 7, // 1 week
+      AuthorizationCode: 60 * 10, // 10 minutes
+      BackchannelAuthenticationRequest: 60 * 60, // 1 hour
+      ClientCredentials: 60 * 10, // 10 minutes
+      DeviceCode: 60 * 10, // 10 minutes
+      Grant: 60 * 60 * 24 * 14, // 2 weeks
+      IdToken: 60 * 60 * 24 * 7, // 1 week
+      Interaction: 60 * 60, // 1 hour
+      RefreshToken: 60 * 60 * 24 * 14, // 2 weeks
+      Session: 60 * 60 * 24 * 14, // 2 weeks
+    },
   };
 };
