@@ -22,6 +22,7 @@ import * as path from 'node:path';
 import { Configuration, AccountClaims } from "oidc-provider";
 import { userExists } from "../system.js";
 import { BASE_PATH } from "../base-path.js";
+import { USER_EMAIL_DOMAIN } from '../defs.js';
 
 const ORIG_JWKS_PATH = process.env.JWKS_PATH || 'jwks.json';
 const JWKS_PATH = path.resolve(BASE_PATH, ORIG_JWKS_PATH);
@@ -66,7 +67,7 @@ export const getConfiguration = async (): Promise<Configuration> => {
           accountId: id,
           async claims(_use, scope) {
             const email = {
-              email: `${id}@menhera.org`,
+              email: `${id}@${USER_EMAIL_DOMAIN}`,
               email_verified: true,
             };
             const profile = {
