@@ -29,6 +29,9 @@ const JWKS_PATH = path.resolve(BASE_PATH, ORIG_JWKS_PATH);
 const ORIG_CLIENTS_PATH = process.env.CLIENTS_PATH || 'clients.json';
 const CLIENTS_PATH = path.resolve(BASE_PATH, ORIG_CLIENTS_PATH);
 
+const ORIG_COOKIES_KEYS_PATH = process.env.COOKIES_KEYS_PATH || 'cookies-keys.json';
+const COOKIES_KEYS_PATH = path.resolve(BASE_PATH, ORIG_COOKIES_KEYS_PATH);
+
 const getJson = async (path: string): Promise<any> => {
   const json = await fs.readFile(path, 'utf-8');
   return JSON.parse(json);
@@ -37,9 +40,16 @@ const getJson = async (path: string): Promise<any> => {
 export const getConfiguration = async (): Promise<Configuration> => {
   const clients = await getJson(CLIENTS_PATH);
   const jwks = await getJson(JWKS_PATH);
+  const cookiesKeys = await getJson(COOKIES_KEYS_PATH);
   return {
     clients,
     jwks,
+    features: {
+      devInteractions: { enabled: false },
+    },
+    cookies: {
+      keys: cookiesKeys,
+    },
     async findAccount(ctx, id) {
       if (await userExists(id)) {
         return {
