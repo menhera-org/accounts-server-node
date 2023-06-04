@@ -18,25 +18,24 @@
 */
 
 import { Express } from "express";
-import { STATIC_DIR } from "./base-path.js";
 import { urlencodedParser } from "./middlewares.js";
 import { pamAuthenticatePromise } from "node-linux-pam";
 import Provider, { InteractionResults } from "oidc-provider";
 
 export const defineOidcRoutes = (app: Express, provider: Provider) => {
   app.get('/interaction/:uid', async (req, res, next) => {
-    if (req.session.username) {
-      const result = {
-        login: {
-          accountId: req.session.username,
-        },
-      };
-      await provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
-      return;
-    }
     const details = await provider.interactionDetails(req, res);
     const { uid, prompt: { name, details: promptDetails } } = details;
     if (name == 'login') {
+      if (req.session.username) {
+        const result = {
+          login: {
+            accountId: req.session.username,
+          },
+        };
+        await provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+        return;
+      }
       res.render('interaction-login', {
         uid,
       });
