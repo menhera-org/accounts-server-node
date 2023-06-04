@@ -113,6 +113,8 @@ if (!SECRET) {
 const staticDir = path.join(__dirname, '../static');
 const assetsDir = path.join(__dirname, '../assets');
 
+app.set('trust proxy', 'loopback');
+
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/assets', express.static(assetsDir));
