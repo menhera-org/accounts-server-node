@@ -37,10 +37,14 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
     const details = await provider.interactionDetails(req, res);
     const { uid, prompt: { name, details: promptDetails } } = details;
     if (name == 'login') {
-      res.sendFile('interaction-login.html', { root: STATIC_DIR });
+      res.render('interaction-login', {
+        uid,
+      });
       return;
     } else if (name == 'consent') {
-      res.sendFile('interaction-consent.html', { root: STATIC_DIR });
+      res.render('interaction-consent', {
+        uid,
+      });
       return;
     }
 

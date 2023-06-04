@@ -26,6 +26,7 @@ import { SECRET, SESSION_MAX_AGE } from './defs.js';
 export const createApp = async (): Promise<Express> => {
   const app = express();
   app.set('trust proxy', 'loopback');
+  app.set('view engine', 'ejs');
   app.use(setNoCache);
   app.use('/assets', express.static(ASSETS_DIR));
 
