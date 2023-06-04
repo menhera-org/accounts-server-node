@@ -17,27 +17,26 @@
   @license
 */
 
-import 'dotenv/config';
-import { createApp } from './app.js';
-import { PORT } from './defs.js';
-import { defineRoutes } from './basic-routes.js';
-import { getProvider } from './get-provider.js';
-import { defineOidcRoutes } from './oidc-routes.js';
+import session from 'express-session';
+import express, {Express} from 'express';
+import { setNoCache } from './middlewares.js';
+import { ASSETS_DIR } from './base-path.js';
+import { SECRET, SESSION_MAX_AGE } from './defs.js';
 
-declare module 'express-session' {
-  interface SessionData {
-    username: string;
-  }
-}
+export const createApp = async (): Promise<Express> => {
+  const app = express();
+  app.set('trust proxy', 'loopback');
+  app.use(setNoCache);
+  app.use('/assets', express.static(ASSETS_DIR));
 
-createApp().then(async (app) => {
-  const provider = await getProvider();
-  app.use('/oidc', provider.callback());
-
-  defineRoutes(app);
-  defineOidcRoutes(app, provider);
-
-  app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-  });
-});
+  app.use(session({
+    secret: SECRET as string,
+    saveUninitialized: true,
+    cookie: {
+      maxAge: SESSION_MAX_AGE,
+      secure: false,
+    },
+    resave: false,
+  }));
+  return app;
+};

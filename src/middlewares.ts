@@ -17,27 +17,11 @@
   @license
 */
 
-import 'dotenv/config';
-import { createApp } from './app.js';
-import { PORT } from './defs.js';
-import { defineRoutes } from './basic-routes.js';
-import { getProvider } from './get-provider.js';
-import { defineOidcRoutes } from './oidc-routes.js';
+import express from 'express';
 
-declare module 'express-session' {
-  interface SessionData {
-    username: string;
-  }
-}
+export const urlencodedParser = express.urlencoded({ extended: false });
 
-createApp().then(async (app) => {
-  const provider = await getProvider();
-  app.use('/oidc', provider.callback());
-
-  defineRoutes(app);
-  defineOidcRoutes(app, provider);
-
-  app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-  });
-});
+export const setNoCache = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+};

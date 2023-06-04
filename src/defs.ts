@@ -17,27 +17,17 @@
   @license
 */
 
-import 'dotenv/config';
-import { createApp } from './app.js';
-import { PORT } from './defs.js';
-import { defineRoutes } from './basic-routes.js';
-import { getProvider } from './get-provider.js';
-import { defineOidcRoutes } from './oidc-routes.js';
+export const ADMIN_GROUP = process.env.ADMIN_GROUP || 'sudo';
+export const ALIASES_PATH = process.env.ALIASES_PATH || '/etc/aliases';
+export const ALL_LISTS_USER = process.env.ALL_LISTS_USER || 'root';
+export const OIDC_ISSUER = process.env.OIDC_ISSUER || 'http://localhost:3000';
 
-declare module 'express-session' {
-  interface SessionData {
-    username: string;
-  }
+export const SESSION_MAX_AGE = 1000 * 60 * 60 * 24; // 1 day
+
+export const PORT = parseInt(process.env.PORT || '3000', 10);
+const SECRET = process.env.SECRET;
+if (!SECRET) {
+  throw new Error('SECRET is not set');
 }
 
-createApp().then(async (app) => {
-  const provider = await getProvider();
-  app.use('/oidc', provider.callback());
-
-  defineRoutes(app);
-  defineOidcRoutes(app, provider);
-
-  app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-  });
-});
+export { SECRET };

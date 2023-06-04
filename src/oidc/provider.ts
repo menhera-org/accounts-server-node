@@ -17,27 +17,10 @@
   @license
 */
 
-import 'dotenv/config';
-import { createApp } from './app.js';
-import { PORT } from './defs.js';
-import { defineRoutes } from './basic-routes.js';
-import { getProvider } from './get-provider.js';
-import { defineOidcRoutes } from './oidc-routes.js';
+import Provider, { Configuration } from 'oidc-provider';
 
-declare module 'express-session' {
-  interface SessionData {
-    username: string;
-  }
-}
-
-createApp().then(async (app) => {
-  const provider = await getProvider();
-  app.use('/oidc', provider.callback());
-
-  defineRoutes(app);
-  defineOidcRoutes(app, provider);
-
-  app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-  });
-});
+export const oidc = (issuer: string, configuration: Configuration) => {
+  const provider = new Provider(issuer, configuration);
+  provider.proxy = true;
+  return provider;
+};

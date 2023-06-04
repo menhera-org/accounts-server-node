@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Login</title>
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="/assets/main.css">
+  </head>
+  <body>
+    <h1>Login</h1>
+    <p id="error"></p>
+    <form id="consent_form" action="#" method="POST">
+      <p><button type="submit">Continue</button></p>
+    </form>
+    <script defer>
+      const path = location.pathname;
+      const matches = path.match(/\/interaction\/([^/]+)$/);
+      if (matches && matches[1]) {
+        const consentForm = document.getElementById('consent_form');
+        consentForm.action = `/interaction/${matches[1]}/confirm`;
+      }
+    </script>
+  </body>
+</html>
