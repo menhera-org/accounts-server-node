@@ -55,6 +55,7 @@ export const getConfiguration = async (): Promise<Configuration> => {
       "offline_access",
       "email",
       "email_verified",
+      "profile",
     ],
     async findAccount(ctx, id) {
       if (await userExists(id)) {
@@ -63,6 +64,7 @@ export const getConfiguration = async (): Promise<Configuration> => {
           async claims() {
             return {
               sub: id,
+              name: id,
               email: `${id}@menhera.org`,
               email_verified: true,
             };
