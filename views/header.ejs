@@ -10,8 +10,10 @@
   <body>
     <div id="top-bar">
       <h2>Menhera.org Accounts</h2>
+      <% if (typeof username != 'undefined' && username) { %>
       <div id="top-bar-account"><%= username %></div>
       <div id="top-bar-account-actions">
         <a href="/logout">Log out</a>
       </div>
+      <% } %>
     </div>
