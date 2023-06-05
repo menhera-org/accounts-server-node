@@ -111,6 +111,8 @@ body.admin :is(#add-member, #create-list){
   margin: 0;
   padding: 0;
   flex: 1;
+  font-size: 100%;
+  font-weight: normal;
 }
 
 #top-bar a {
