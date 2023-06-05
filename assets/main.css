@@ -40,3 +40,22 @@ a:is(:hover, :active) {
 body:not(.admin) .list-user-remove-button {
   display: none;
 }
+
+button[type="submit"] {
+  display: block;
+  margin: 0;
+  appearance: none;
+  background-color: #26708e;
+  color: #fff;
+  border: none;
+  border-radius: .25em;
+  padding: .5em 1em;
+}
+
+button[type="submit"]:hover {
+  background-color: #2d81a3;
+}
+
+button[type="submit"]:active {
+  background-color: #195168;
+}
