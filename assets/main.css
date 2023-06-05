@@ -88,3 +88,38 @@ button[type="submit"]:active {
 body.admin :is(#add-member, #create-list){
   display: unset;
 }
+
+#top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  background-color: #537148;
+  color: #fff;
+  align-items: center;
+  padding: .5em 1em;
+  column-gap: 1em;
+}
+
+#top-bar > h2 {
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+
+#top-bar a {
+  color: inherit !important;
+}
+
+#top-bar-account::before {
+  content: '';
+  display: inline-block;
+  width: 2em;
+  height: 2em;
+  margin-inline-end: 1em;
+  background-color: #fff;
+  mask: url(/assets/avatar.svg) no-repeat center / contain;
+  vertical-align: middle;
+}
