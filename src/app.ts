@@ -17,6 +17,7 @@
   @license
 */
 
+import helmet from 'helmet';
 import session from 'express-session';
 import express, {Express} from 'express';
 import { setNoCache } from './middlewares.js';
@@ -27,6 +28,7 @@ export const createApp = async (): Promise<Express> => {
   const app = express();
   app.set('trust proxy', 'loopback');
   app.set('view engine', 'ejs');
+  app.use(helmet());
   app.use(setNoCache);
   app.use('/assets', express.static(ASSETS_DIR));
 

@@ -142,6 +142,7 @@ ul.breadcrumbs {
   min-width: 0;
   width: 100%;
   border-block-end: solid 1px #ccc;
+  padding-block-end: .5em;
   margin-block-end: 1em;
 }
 
