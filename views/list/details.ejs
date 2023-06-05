@@ -1,0 +1,19 @@
+<%- include('header'); %>
+<h1 id="heading">Mailing list</h1>
+<p>Signed in as <span id="username"></span></p>
+<p id="error"></p>
+<ul>
+  <li><a href="/">Top</a></li>
+  <li><a href="/mailing-lists">Back to lists</a></li>
+  <li><a href="/logout">Log out</a></li>
+</ul>
+<h2>Members</h2>
+<ul id="members"></ul>
+<section id="add-member">
+  <h2>Add member</h2>
+  <p>Name: <input id="add_member_name" type="text"></p>
+  <p><button id="add_member_button">Add</button></p>
+</section>
+<script type="module" src="/assets/user-info.js"></script>
+<script type="module" src="/assets/list/list-details.js"></script>
+<%- include('footer'); %>

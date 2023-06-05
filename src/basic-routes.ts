@@ -41,7 +41,10 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       res.redirect('/login');
       return;
     }
-    res.sendFile('index.html', { root: staticDir });
+    res.render('index', {
+      username: session.username,
+      title: 'Accout management',
+    });
   });
 
   app.get('/email-aliases', (req, res) => {
@@ -50,7 +53,10 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       res.redirect('/login');
       return;
     }
-    res.sendFile('email-aliases.html', { root: staticDir });
+    res.render('email-aliases', {
+      username: session.username,
+      title: 'Email aliases',
+    });
   });
 
   app.get('/login', (req, res) => {
@@ -81,7 +87,10 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       res.redirect('/login');
       return;
     }
-    res.sendFile('change-password.html', { root: staticDir });
+    res.render('change-password', {
+      username: session.username,
+      title: 'Change password',
+    });
   });
 
   app.get('/mailing-lists', (req, res) => {
@@ -90,16 +99,24 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       res.redirect('/login');
       return;
     }
-    res.sendFile('mailing-lists.html', { root: staticDir });
+    res.render('list/lists', {
+      username: session.username,
+      title: 'Mailing lists',
+    });
   });
 
-  app.get('/mailing-list', (req, res) => {
+  app.get('/mailing-list', urlencodedParser, (req, res) => {
     const session = req.session;
     if (!session.username) {
       res.redirect('/login');
       return;
     }
-    res.sendFile('mailing-list.html', { root: staticDir });
+    const listName = req.query.list;
+    res.render('list/details', {
+      username: session.username,
+      title: 'Mailing list',
+      listName,
+    });
   });
 
   app.get('/get-username', (req, res) => {

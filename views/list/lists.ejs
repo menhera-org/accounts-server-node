@@ -1,0 +1,18 @@
+<%- include('header'); %>
+<h1>Mailing lists</h1>
+<p>Signed in as <span id="username"></span></p>
+<p id="error"></p>
+<ul>
+  <li><a href="/">Back</a></li>
+  <li><a href="/logout">Log out</a></li>
+</ul>
+<ul id="lists"></ul>
+<section id="create-list">
+  <h2>Create list</h2>
+  <p>Name: <input id="create_list_name" type="text"></p>
+  <p>Members (comma-separated): <input id="create_list_members" type="text"></p>
+  <p><button id="create_list_button">Add</button></p>
+</section>
+<script type="module" src="/assets/user-info.js"></script>
+<script type="module" src="/assets/list/lists.js"></script>
+<%- include('footer'); %>

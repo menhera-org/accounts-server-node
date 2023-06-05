@@ -103,7 +103,7 @@ export const getConfiguration = async (): Promise<Configuration> => {
       },
     },
     ttl: {
-      AccessToken: 60 * 60 * 24 * 7, // 1 week
+      AccessToken: 60 * 60 * 24 * 7 * 2, // 2 weeks
       AuthorizationCode: 60 * 10, // 10 minutes
       BackchannelAuthenticationRequest: 60 * 60, // 1 hour
       ClientCredentials: 60 * 10, // 10 minutes
