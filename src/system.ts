@@ -54,7 +54,7 @@ export const userInGroup = async (username: string, group: string) => {
         resolve(false);
         return;
       }
-      const groups = stdout.match(/groups=[0-9]+\((.*?)\)(?:,[0-9]+\((.*?)\))/)?.slice(1) ?? [];
+      const groups = stdout.match(/groups=[0-9]+\((.*?)\)(?:,[0-9]+\((.*?)\))*/)?.slice(1) ?? [];
       resolve(groups.includes(group));
     });
   });
