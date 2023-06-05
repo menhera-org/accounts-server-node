@@ -68,7 +68,15 @@ button[type="submit"]:active {
   row-gap: .5em;
 }
 
-#login-form input {
+#login-form input:is([type="text"], [type="password"]) {
   min-inline-size: 0;
   inline-size: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 0;
+  padding: .25em .5em;
+  appearance: none;
 }
