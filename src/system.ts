@@ -54,7 +54,20 @@ export const userInGroup = async (username: string, group: string) => {
         resolve(false);
         return;
       }
-      const groups = stdout.match(/groups=[0-9]+\((.*?)\)(?:,[0-9]+\((.*?)\))*/)?.slice(1) ?? [];
+      const output = stdout.trim();
+      const groupsMatches = output.match(/groups=([0-9]+\(.*?\)(?:,[0-9]+\(.*?\))*)/);
+      const groups: string[] = [];
+      if (groupsMatches && groupsMatches[1]) {
+        const groupStrings = groupsMatches[1].split(',');
+        for (const groupString of groupStrings) {
+          const matches = groupString.match(/([0-9]+)\((.*?)\)/);
+          if (!matches) {
+            continue;
+          }
+          const groupName = matches[2] as string;
+          groups.push(groupName);
+        }
+      }
       resolve(groups.includes(group));
     });
   });
