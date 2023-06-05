@@ -1,7 +1,7 @@
 <%- include('header'); %>
-<h1>Login</h1>
+<h1>Log in</h1>
 <p id="error"></p>
-<form id="login_form" action="/interaction/<%= uid %>/login" method="POST">
+<form action="/interaction/<%= uid %>/login" method="POST">
   <%- include('login-form'); %>
   <input type="hidden" name="token" value="<%= loginToken %>">
   <p><button type="submit">Log in</button></p>

@@ -1,15 +1,10 @@
 <%- include('header'); %>
-<h1>Login</h1>
+<h1>Log in</h1>
 <p id="error"></p>
-<form id="login_form" action="/auth" method="POST">
+<form action="/auth" method="POST">
   <%- include('login-form'); %>
   <input type="hidden" name="token" value="<%= loginToken %>">
   <p><button type="submit">Log in</button></p>
 </form>
-<script defer>
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('error')) {
-    document.getElementById('error').textContent = params.get('error');
-  }
-</script>
+<script type="module" src="/assets/display-error.js"></script>
 <%- include('footer'); %>

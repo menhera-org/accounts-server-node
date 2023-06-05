@@ -80,3 +80,11 @@ button[type="submit"]:active {
   padding: .25em .5em;
   appearance: none;
 }
+
+:is(#add-member, #create-list){
+  display: none;
+}
+
+body.admin :is(#add-member, #create-list){
+  display: unset;
+}

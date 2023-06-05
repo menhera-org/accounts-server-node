@@ -5,20 +5,6 @@
     <title>Account Management Menu</title>
     <meta name="viewport" content="width=device-width">
     <link rel="stylesheet" href="/assets/main.css">
-    <script defer>
-      fetch('/get-username')
-      .then(response => response.json())
-      .then(data => {
-        if (!data.logged_in) return;
-        document.getElementById('username').textContent = data.username;
-        if (data.is_admin) {
-          document.getElementById('username').textContent += ' (admin)';
-        }
-      })
-      .catch((e) => {
-        console.error(e);
-      });
-    </script>
   </head>
   <body>
     <h1>Account Management Menu</h1>
@@ -29,5 +15,6 @@
       <li><a href="/mailing-lists">Mailing lists</a></li>
       <li><a href="/logout">Log out</a></li>
     </ul>
+    <script type="module" src="/assets/user-info.js"></script>
   </body>
 </html>
