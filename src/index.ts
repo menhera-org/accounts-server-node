@@ -27,6 +27,7 @@ import { defineOidcRoutes } from './oidc-routes.js';
 declare module 'express-session' {
   interface SessionData {
     username: string;
+    loginToken: string;
   }
 }
 

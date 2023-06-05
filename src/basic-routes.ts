@@ -17,6 +17,7 @@
   @license
 */
 
+import * as crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { Express, Request, Response } from 'express';
 import { pamAuthenticatePromise } from 'node-linux-pam';
@@ -57,7 +58,12 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       res.redirect('/');
       return;
     }
-    res.sendFile('login.html', { root: staticDir });
+    const loginToken = crypto.randomUUID();
+    req.session.loginToken = loginToken;
+    res.render('login', {
+      title: 'Log in',
+      loginToken: loginToken,
+    });
   });
 
   app.get('/logout', (req, res) => {
@@ -192,6 +198,12 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     }
     const username = req.body.username;
     const password = req.body.password;
+    const token = req.body.token;
+    const loginToken = req.session.loginToken;
+    if (!token || token != loginToken) {
+      res.redirect('/login?error=invalid-token');
+      return;
+    }
     pamAuthenticatePromise({
       username,
       password,

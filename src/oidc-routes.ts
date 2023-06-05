@@ -17,6 +17,7 @@
   @license
 */
 
+import * as crypto from 'node:crypto';
 import { Express } from "express";
 import { urlencodedParser } from "./middlewares.js";
 import { pamAuthenticatePromise } from "node-linux-pam";
@@ -25,7 +26,7 @@ import Provider, { InteractionResults } from "oidc-provider";
 export const defineOidcRoutes = (app: Express, provider: Provider) => {
   app.get('/interaction/:uid', async (req, res, next) => {
     const details = await provider.interactionDetails(req, res);
-    const { uid, prompt: { name, details: promptDetails } } = details;
+    const { uid, prompt: { name, details: promptDetails }, params } = details;
     if (name == 'login') {
       if (req.session.username) {
         const result = {
@@ -36,12 +37,19 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
         await provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
         return;
       }
+      const uuid = crypto.randomUUID();
+      req.session.loginToken = uuid;
       res.render('interaction-login', {
+        title: 'Log in',
         uid,
+        loginToken: uuid,
       });
       return;
     } else if (name == 'consent') {
+      const clientId = params.client_id;
       res.render('interaction-consent', {
+        title: `Log in to ${clientId}`,
+        clientId,
         uid,
       });
       return;
@@ -53,6 +61,17 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
   app.post('/interaction/:uid/login', urlencodedParser, (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
+    const token = req.body.token;
+    const loginToken = req.session.loginToken;
+    if (!token || token !== loginToken) {
+      res.status(400);
+      const result = {
+        error: 'not_authenticated',
+        error_description: 'Invalid request',
+      };
+      provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+      return;
+    }
     pamAuthenticatePromise({
       username,
       password,
