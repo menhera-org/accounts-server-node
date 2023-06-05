@@ -1,12 +1,12 @@
-<%- include('header'); %>
+<%- include('../header'); %>
+<ul class="breadcrumbs">
+  <li><a href="/">Top</a></li>
+  <li><a href="/mailing-lists">Mailing lists</a></li>
+  <li>List details</li>
+</ul>
 <h1 id="heading">Mailing list</h1>
 <p>Signed in as <span id="username"></span></p>
 <p id="error"></p>
-<ul>
-  <li><a href="/">Top</a></li>
-  <li><a href="/mailing-lists">Back to lists</a></li>
-  <li><a href="/logout">Log out</a></li>
-</ul>
 <h2>Members</h2>
 <ul id="members"></ul>
 <section id="add-member">
@@ -16,4 +16,4 @@
 </section>
 <script type="module" src="/assets/user-info.js"></script>
 <script type="module" src="/assets/list/list-details.js"></script>
-<%- include('footer'); %>
+<%- include('../footer'); %>
