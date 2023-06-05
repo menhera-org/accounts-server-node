@@ -2,8 +2,7 @@
 <h1>Login</h1>
 <p id="error"></p>
 <form id="login_form" action="/interaction/<%= uid %>/login" method="POST">
-  <p>Username: <input name="username" type="text"></p>
-  <p>Password: <input name="password" type="password"></p>
+  <%- include('login-form'); %>
   <input type="hidden" name="token" value="<%= loginToken %>">
   <p><button type="submit">Log in</button></p>
 </form>

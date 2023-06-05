@@ -59,3 +59,16 @@ button[type="submit"]:hover {
 button[type="submit"]:active {
   background-color: #195168;
 }
+
+#login-form {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
+  column-gap: .5em;
+  row-gap: .5em;
+}
+
+#login-form input {
+  min-inline-size: 0;
+  inline-size: 100%;
+}
