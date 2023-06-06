@@ -62,9 +62,19 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
     try {
       const username = req.body.username;
       const password = req.body.password2;
+      const dummyPassword = req.body.password;
       const token = req.body.token;
       const loginToken = req.session.loginToken;
       if (!token || token !== loginToken) {
+        res.status(400);
+        const result = {
+          error: 'not_authenticated',
+          error_description: 'Invalid request',
+        };
+        provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+        return;
+      }
+      if (dummyPassword) {
         res.status(400);
         const result = {
           error: 'not_authenticated',

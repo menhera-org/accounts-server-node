@@ -198,10 +198,15 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     }
     const username = req.body.username;
     const password = req.body.password2;
+    const dummyPassword = req.body.password;
     const token = req.body.token;
     const loginToken = req.session.loginToken;
     if (!token || token != loginToken) {
       res.redirect('/login?error=invalid-token');
+      return;
+    }
+    if (dummyPassword) {
+      res.redirect('/login?error=auth-error');
       return;
     }
     pamAuthenticatePromise({
