@@ -3,10 +3,13 @@ const WORKER_PATH = '/assets/factorization/quadratic-sieve.js';
 
 const factor = async (n) => {
   const bigN = BigInt(n);
-  await new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     const worker = new Worker(WORKER_PATH);
     worker.onmessage = (ev) => {
       resolve(ev.data);
+    };
+    worker.onerror = (ev) => {
+      reject(ev);
     };
     worker.postMessage(bigN);
   });
