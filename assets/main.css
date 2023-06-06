@@ -86,7 +86,7 @@ button[type="submit"]:active {
   background-color: #195168;
 }
 
-#login-form {
+#login-form:not([hidden]) {
   display: grid;
   grid-template-columns: max-content 1fr;
   align-items: center;
