@@ -1,4 +1,8 @@
 
 if (location.search != '') {
-  history.replaceState(null, null, location.pathname);
+  const url = new URL(location.href);
+  const params = url.searchParams;
+  params.delete('error');
+  params.delete('message');
+  history.replaceState(null, null, url.href);
 }
