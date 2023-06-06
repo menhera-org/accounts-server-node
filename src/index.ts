@@ -28,6 +28,7 @@ import { Message } from './lib/Message.js';
 import { getAliases, updateAliases } from './parent/postaliases.js';
 import { execPamAuth } from './parent/exec-pam-auth.js';
 import { getServerConfiguration } from './parent/get-configuration.js';
+import { changePassword } from './parent/chpasswd.js';
 
 const SERVER_SCRIPT_PATH = path.resolve(BASE_PATH, 'dist/server.js');
 
@@ -70,6 +71,24 @@ const startServer = async (): Promise<void> => {
         }
         const  { username, password } = message.data;
         return execPamAuth({ username, password });
+      }
+
+      case 'change_password': {
+        if ('object' != typeof message.data || null === message.data) {
+          throw new Error('change_password: invalid data type');
+        }
+        if (!('username' in message.data) || 'string' != typeof message.data.username) {
+          throw new Error('change_password: invalid username');
+        }
+        if (!('oldPassword' in message.data) || 'string' != typeof message.data.oldPassword) {
+          throw new Error('change_password: invalid oldPassword');
+        }
+        if (!('newPassword' in message.data) || 'string' != typeof message.data.newPassword) {
+          throw new Error('change_password: invalid newPassword');
+        }
+        const { username, oldPassword, newPassword } = message.data;
+        await changePassword(username, oldPassword, newPassword);
+        return;
       }
     }
   }, child);

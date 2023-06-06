@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width">
     <link rel="icon" href="/assets/icon.png">
     <link rel="stylesheet" href="/assets/main.css">
+    <script type="module" src="/assets/main.js"></script>
   </head>
   <body>
     <div id="top-bar">
@@ -18,3 +19,5 @@
       <% } %>
     </div>
     <main id="main">
+      <div id="system-message"><%= typeof message != 'undefined' ? (message ?? '') : '' %></div>
+      <div id="system-error"><%= typeof error != 'undefined' ? (error ?? '') : '' %></div>

@@ -89,3 +89,7 @@ export const getAliases = async (): Promise<string> => {
 export const updateAliases = async (aliases: string): Promise<void> => {
   await sendMessage('postaliases_update', aliases);
 };
+
+export const callChangePassword = async (username: string, oldPassword: string, newPassword: string): Promise<void> => {
+  await sendMessage('change_password', { username, oldPassword, newPassword });
+};

@@ -18,13 +18,12 @@
 */
 
 import * as crypto from 'node:crypto';
-import { spawn } from 'node:child_process';
 import { Express, Request, Response } from 'express';
 import { pamAuthenticatePromise } from './pam-auth-client.js';
 import { Aliases } from '../lib/Aliases.js';
 import { urlencodedParser } from './middlewares.js';
 import { STATIC_DIR } from '../base-path.js';
-import { userExists, userInGroup, validateAliasName, getAliases, updateAliases, userIsAdmin } from './system.js';
+import { userExists, userInGroup, validateAliasName, getAliases, updateAliases, userIsAdmin, callChangePassword } from './system.js';
 import { ADMIN_GROUP, ALL_LISTS_USER } from '../defs.js';
 import Provider from 'oidc-provider';
 
@@ -35,15 +34,17 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     return provider.app.createContext(req, res);
   };
 
-  app.get('/', (req, res) => {
+  app.get('/', urlencodedParser, (req, res) => {
     const session = req.session;
     if (!session.username) {
       res.redirect('/login');
       return;
     }
+    const message = req.query.message ?? '';
     res.render('index', {
       username: session.username,
       title: 'Accout management',
+      message,
     });
   });
 
@@ -59,16 +60,20 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     });
   });
 
-  app.get('/login', (req, res) => {
+  app.get('/login', urlencodedParser, (req, res) => {
     if (req.session.username) {
       res.redirect('/');
       return;
     }
     const loginToken = crypto.randomUUID();
     req.session.loginToken = loginToken;
+    const message = req.query.message ?? '';
+    const error = req.query.error ?? '';
     res.render('login', {
       title: 'Log in',
       loginToken: loginToken,
+      message,
+      error,
     });
   });
 
@@ -76,6 +81,8 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     req.session.destroy((err) => {
       if (err) {
         console.error(err);
+        res.redirect('/login?error=logout-failed');
+        return;
       }
       res.redirect('/login');
     });
@@ -87,9 +94,13 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       res.redirect('/login');
       return;
     }
+    const message = req.query.message ?? '';
+    const error = req.query.error ?? '';
     res.render('change-password', {
       username: session.username,
       title: 'Change password',
+      message,
+      error,
     });
   });
 
@@ -169,41 +180,13 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       res.redirect('/change-password?error=invalid-username');
       return;
     }
-    let stdout = '';
-    let stderr = '';
     try {
-      const proc = spawn('sudo', ['-H', '-u', username, 'passwd']);
-      proc.stdin.write(`${currentPassword}\n`);
-      proc.stdin.write(`${newPassword1}\n`);
-      proc.stdin.write(`${newPassword2}\n`);
-      proc.stdin.end();
-      proc.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
-        stdout += data;
-      });
-      proc.stderr.on('data', (data) => {
-        console.log(`stderr: ${data}`);
-        stderr += data;
-      });
-      const code = await new Promise<number>((resolve, reject) => {
-        proc.on('exit', (code) => {
-          resolve(code ?? 1);
-        });
-        proc.on('error', (err) => {
-          reject(err);
-        });
-      });
-      if (code != 0) {
-        throw new Error('passwd failed');
-      }
-      res.redirect('/');
+      await callChangePassword(username, currentPassword, newPassword1);
+      res.redirect('/?message=' + encodeURIComponent('Password changed successfully.'));
       return;
-    } catch (e) {
-      console.error(e);
-      const stderrLines = stderr.split('\n').map((line) => line.trim()).filter((line) => line != '');
-      const lastStderrLine = stderrLines[stderrLines.length - 1] ?? '';
-      const message = encodeURIComponent(`Error: ${stdout.trim()} (${lastStderrLine})`);
-      res.redirect('/change-password?error=change-password-error&message=' + message);
+    } catch (e: any) {
+      const errorStr = String(e?.message ?? e);
+      res.redirect('/change-password?error=change-password-error&message=' + encodeURIComponent(errorStr));
       return;
     }
   });

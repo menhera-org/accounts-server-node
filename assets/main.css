@@ -29,6 +29,28 @@ a:is(:hover, :active) {
   text-decoration: underline;
 }
 
+:is(#system-error, #system-message):empty {
+  display: none;
+}
+
+:is(#system-error, #system-message) {
+  border: solid 1px #ccc;
+  padding: .5em 1em;
+  margin: .5em 0;
+}
+
+#system-error {
+  background-color: #fdd;
+  color: #c00;
+  border-color: #c00;
+}
+
+#system-message {
+  background-color: #bfe;
+  color: #333;
+  border-color: #068;
+}
+
 #error {
   color: red;
 }
