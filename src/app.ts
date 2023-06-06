@@ -28,7 +28,13 @@ export const createApp = async (): Promise<Express> => {
   const app = express();
   app.set('trust proxy', 'loopback');
   app.set('view engine', 'ejs');
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        formAction: ["https:"],
+      },
+    }
+  }));
   app.use(setNoCache);
   app.use('/assets', express.static(ASSETS_DIR));
 
