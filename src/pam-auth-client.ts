@@ -19,7 +19,7 @@
 
 import { execFile } from 'node:child_process';
 import * as path from 'node:path';
-import { BASE_PATH } from "./base-path";
+import { BASE_PATH } from "./base-path.js";
 
 const AUTH_SCRIPT_PATH = path.resolve(BASE_PATH, 'dist/pam-auth.js');
 
