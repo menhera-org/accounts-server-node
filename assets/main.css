@@ -156,3 +156,7 @@ ul.breadcrumbs > li:not(:last-child)::after {
   margin-inline-start: .5em;
   margin-inline-end: .5em;
 }
+
+button:disabled {
+  opacity: .5;
+}
