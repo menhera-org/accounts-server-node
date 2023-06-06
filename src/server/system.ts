@@ -19,11 +19,12 @@
 
 import * as fs from 'node:fs/promises';
 import { execFile } from 'node:child_process';
-import { ALIASES_PATH, ADMIN_GROUP } from './defs.js';
+import { ALIASES_PATH, ADMIN_GROUP } from '../defs.js';
+import { sendMessage } from './child-channel.js';
 
 const aliasesPath = ALIASES_PATH;
 
-export const executePostalias = async (aliasesPath: string) => {
+const executePostalias = async (aliasesPath: string) => {
   return new Promise<void>((resolve, reject) => {
     execFile('postalias', [aliasesPath], (error) => {
       if (error) {
@@ -81,17 +82,10 @@ export const userIsAdmin = async (username: string) => {
   return userInGroup(username, ADMIN_GROUP);
 };
 
-export const getAliases = async () => {
-  if (!aliasesPath) {
-    throw new Error('ALIASES_PATH is not set');
-  }
-  return fs.readFile(aliasesPath, 'utf-8');
+export const getAliases = async (): Promise<string> => {
+  return sendMessage('postaliases_get', null);
 };
 
-export const updateAliases = async (aliases: string) => {
-  if (!aliasesPath) {
-    throw new Error('ALIASES_PATH is not set');
-  }
-  await fs.writeFile(aliasesPath, aliases);
-  await executePostalias(aliasesPath);
+export const updateAliases = async (aliases: string): Promise<void> => {
+  await sendMessage('postaliases_update', aliases);
 };

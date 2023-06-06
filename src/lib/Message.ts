@@ -17,6 +17,7 @@
   @license
 */
 
-import { ClientMetadata } from 'oidc-provider';
-
-export const clients: ClientMetadata[] = [];
+export interface Message {
+  type: string;
+  data: any;
+}

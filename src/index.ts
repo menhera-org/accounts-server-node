@@ -18,27 +18,69 @@
 */
 
 import 'dotenv/config';
-import { createApp } from './app.js';
-import { PORT } from './defs.js';
-import { defineRoutes } from './basic-routes.js';
-import { getProvider } from './get-provider.js';
-import { defineOidcRoutes } from './oidc-routes.js';
+import { SERVER_USER } from './defs.js';
+import { BASE_PATH } from './base-path.js';
+import { fork } from 'node:child_process';
+import * as path from 'node:path';
+import { getUserIds } from './lib/unix-users.js';
+import { MessageChannel } from './lib/MessageChannel.js';
+import { Message } from './lib/Message.js';
+import { getAliases, updateAliases } from './parent/postaliases.js';
+import { execPamAuth } from './parent/exec-pam-auth.js';
+import { getServerConfiguration } from './parent/get-configuration.js';
 
-declare module 'express-session' {
-  interface SessionData {
-    username: string;
-    loginToken: string;
-  }
-}
+const SERVER_SCRIPT_PATH = path.resolve(BASE_PATH, 'dist/server.js');
 
-createApp().then(async (app) => {
-  const provider = await getProvider();
-  app.use('/oidc', provider.callback());
+process.title = 'accounts-server';
 
-  defineRoutes(app, provider);
-  defineOidcRoutes(app, provider);
-
-  app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
+const startServer = async (): Promise<void> => {
+  const { uid, gid } = await getUserIds(SERVER_USER);
+  const child = fork(SERVER_SCRIPT_PATH, [], {
+    detached: false,
+    uid,
+    gid,
   });
+  const channel = new MessageChannel(async (message: Message) => {
+    switch (message.type) {
+      case 'server_config_get': {
+        return await getServerConfiguration();
+      }
+
+      case 'postaliases_get': {
+        return await getAliases();
+      }
+
+      case 'postaliases_update': {
+        if ('string' != typeof message.data) {
+          throw new Error('postaliases_update: invalid data type');
+        }
+        await updateAliases(message.data);
+        return;
+      }
+
+      case 'pam_auth': {
+        if ('object' != typeof message.data || null === message.data) {
+          throw new Error('pam_auth: invalid data type');
+        }
+        if (!('username' in message.data) || 'string' != typeof message.data.username) {
+          throw new Error('pam_auth: invalid username');
+        }
+        if (!('password' in message.data) || 'string' != typeof message.data.password) {
+          throw new Error('pam_auth: invalid password');
+        }
+        const  { username, password } = message.data;
+        return execPamAuth({ username, password });
+      }
+    }
+  }, child);
+
+  child.on('exit', (code, signal) => {
+    console.error(`Child process exited with code ${code} and signal ${signal}`);
+    process.exit(1);
+  });
+};
+
+startServer().catch((e) => {
+  console.error(e);
+  process.exit(1);
 });

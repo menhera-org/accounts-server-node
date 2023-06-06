@@ -17,19 +17,24 @@
   @license
 */
 
-export const ADMIN_GROUP = process.env.ADMIN_GROUP || 'sudo';
-export const ALIASES_PATH = process.env.ALIASES_PATH || '/etc/aliases';
-export const ALL_LISTS_USER = process.env.ALL_LISTS_USER || 'root';
-export const OIDC_ISSUER = process.env.OIDC_ISSUER || 'http://localhost:3000';
-export const USER_EMAIL_DOMAIN = process.env.USER_EMAIL_DOMAIN || 'menhera.org';
-export const SERVER_USER = process.env.SERVER_USER || 'nobody';
+import { execFile } from 'node:child_process';
+import * as path from 'node:path';
+import { BASE_PATH } from "../base-path.js";
 
-export const SESSION_MAX_AGE = 1000 * 60 * 60 * 24; // 1 day
+const AUTH_SCRIPT_PATH = path.resolve(BASE_PATH, 'dist/pam-auth.js');
 
-export const PORT = parseInt(process.env.PORT || '3000', 10);
-const SECRET = (process.env.SECRET ?? '').trim();
-if (!SECRET) {
-  throw new Error('SECRET is not set');
-}
-
-export { SECRET };
+export const execPamAuth = async ({username, password}: {username: string, password: string}): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const child = execFile('node', [AUTH_SCRIPT_PATH, username], (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+    child.stdout?.pipe(process.stdout);
+    child.stderr?.pipe(process.stderr);
+    child.stdin?.write(password);
+    child.stdin?.end();
+  });
+};

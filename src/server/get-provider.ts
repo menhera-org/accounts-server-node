@@ -17,30 +17,14 @@
   @license
 */
 
-import { pamAuthenticatePromise } from "node-linux-pam";
+import { getConfiguration } from "./oidc/configuration.js";
+import { OIDC_ISSUER } from "../defs.js";
+import { oidc } from "./oidc/provider.js";
+import Provider from "oidc-provider";
+import { ServerConfiguration } from "../lib/ServerConfiguration.js";
 
-// note that this is an entry point.
-// this file is not imported from anywhere.
-// this should be executed as root.
-
-process.title = 'accounts-server-pam-auth';
-const username = process.argv[2] ?? '';
-
-process.stdin.resume();
-process.stdin.setEncoding('utf-8');
-
-let input = '';
-
-process.stdin.on('data', (chunk) => {
-  input += chunk;
-});
-
-process.stdin.on('end', () => {
-  const password = input.trim();
-  pamAuthenticatePromise({ username, password }).then(() => {
-    process.exit(0);
-  }).catch((e) => {
-    console.error(e);
-    process.exit(1);
-  });
-});
+export const getProvider = async (config: ServerConfiguration): Promise<Provider> => {
+  const configuration = await getConfiguration(config);
+  const provider = oidc(OIDC_ISSUER, configuration);
+  return provider;
+};

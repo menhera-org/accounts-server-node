@@ -21,11 +21,11 @@ import * as crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { Express, Request, Response } from 'express';
 import { pamAuthenticatePromise } from './pam-auth-client.js';
-import { Aliases } from './Aliases.js';
+import { Aliases } from '../lib/Aliases.js';
 import { urlencodedParser } from './middlewares.js';
-import { STATIC_DIR } from './base-path.js';
+import { STATIC_DIR } from '../base-path.js';
 import { userExists, userInGroup, validateAliasName, getAliases, updateAliases, userIsAdmin } from './system.js';
-import { ADMIN_GROUP, ALL_LISTS_USER } from './defs.js';
+import { ADMIN_GROUP, ALL_LISTS_USER } from '../defs.js';
 import Provider from 'oidc-provider';
 
 const staticDir = STATIC_DIR;

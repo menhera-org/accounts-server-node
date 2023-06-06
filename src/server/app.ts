@@ -21,8 +21,8 @@ import helmet from 'helmet';
 import session from 'express-session';
 import express, {Express} from 'express';
 import { setNoCache } from './middlewares.js';
-import { ASSETS_DIR } from './base-path.js';
-import { SECRET, SESSION_MAX_AGE } from './defs.js';
+import { ASSETS_DIR } from '../base-path.js';
+import { SECRET, SESSION_MAX_AGE } from '../defs.js';
 
 export const createApp = async (): Promise<Express> => {
   const app = express();

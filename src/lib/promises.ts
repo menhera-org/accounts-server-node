@@ -17,13 +17,22 @@
   @license
 */
 
-import { getConfiguration } from "./oidc/configuration.js";
-import { OIDC_ISSUER } from "./defs.js";
-import { oidc } from "./oidc/provider.js";
-import Provider from "oidc-provider";
+export interface PromiseInfo<T> {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: any) => void;
+}
 
-export const getProvider = async (): Promise<Provider> => {
-  const configuration = await getConfiguration();
-  const provider = oidc(OIDC_ISSUER, configuration);
-  return provider;
+export const createPromise = <T>(): PromiseInfo<T> => {
+  let resolve: (value: T | PromiseLike<T>) => void;
+  let reject: (reason?: any) => void;
+  const promise = new Promise<T>((_resolve, _reject) => {
+    resolve = _resolve;
+    reject = _reject;
+  });
+  return {
+    promise,
+    resolve: resolve!,
+    reject: reject!,
+  };
 };

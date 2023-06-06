@@ -17,31 +17,15 @@
   @license
 */
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import { Configuration, AccountClaims } from "oidc-provider";
 import { userExists } from "../system.js";
-import { BASE_PATH } from "../base-path.js";
-import { USER_EMAIL_DOMAIN } from '../defs.js';
+import { USER_EMAIL_DOMAIN } from '../../defs.js';
+import { ServerConfiguration } from '../../lib/ServerConfiguration.js';
 
-const ORIG_JWKS_PATH = process.env.JWKS_PATH || 'jwks.json';
-const JWKS_PATH = path.resolve(BASE_PATH, ORIG_JWKS_PATH);
-
-const ORIG_CLIENTS_PATH = process.env.CLIENTS_PATH || 'clients.json';
-const CLIENTS_PATH = path.resolve(BASE_PATH, ORIG_CLIENTS_PATH);
-
-const ORIG_COOKIES_KEYS_PATH = process.env.COOKIES_KEYS_PATH || 'cookies-keys.json';
-const COOKIES_KEYS_PATH = path.resolve(BASE_PATH, ORIG_COOKIES_KEYS_PATH);
-
-const getJson = async (path: string): Promise<any> => {
-  const json = await fs.readFile(path, 'utf-8');
-  return JSON.parse(json);
-};
-
-export const getConfiguration = async (): Promise<Configuration> => {
-  const clients = await getJson(CLIENTS_PATH);
-  const jwks = await getJson(JWKS_PATH);
-  const cookiesKeys = await getJson(COOKIES_KEYS_PATH);
+export const getConfiguration = async (serverConfig: ServerConfiguration): Promise<Configuration> => {
+  const clients = serverConfig.clients;
+  const jwks = serverConfig.jwks;
+  const cookiesKeys = serverConfig.cookieKeys;
   return {
     clients,
     jwks,
