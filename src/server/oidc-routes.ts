@@ -61,7 +61,7 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
   app.post('/interaction/:uid/login', urlencodedParser, (req, res, next) => {
     try {
       const username = req.body.username;
-      const password = req.body.password;
+      const password = req.body.password2;
       const token = req.body.token;
       const loginToken = req.session.loginToken;
       if (!token || token !== loginToken) {

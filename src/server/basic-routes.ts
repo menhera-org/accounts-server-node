@@ -197,7 +197,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       return;
     }
     const username = req.body.username;
-    const password = req.body.password;
+    const password = req.body.password2;
     const token = req.body.token;
     const loginToken = req.session.loginToken;
     if (!token || token != loginToken) {

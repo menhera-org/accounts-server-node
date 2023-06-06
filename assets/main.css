@@ -182,3 +182,7 @@ ul.breadcrumbs > li:not(:last-child)::after {
 button:disabled {
   opacity: .5;
 }
+
+label[for="login-form-password1"], input#login-form-password1 {
+  display: none;
+}
