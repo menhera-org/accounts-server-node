@@ -1,8 +1,14 @@
-<div id="login-form">
+<p id="login-form-status">Please wait...</p>
+<div id="login-form" hidden>
   <label for="login-form-username">Username</label>
   <input id="login-form-username" name="username" type="text">
   <label for="login-form-password1">Password</label>
   <input id="login-form-password1" name="password" type="password" autocomplete="new-password">
   <label for="login-form-password2">Password</label>
   <input id="login-form-password2" name="password2" type="password" autocomplete="current-password">
+  <% if ('string' == typeof quizFactorization) { %>
+    <input id="login-form-quiz-factorization" name="quizFactorization" type="hidden" value="<%= quizFactorization %>">
+    <input id="login-form-quiz-factorization-answer" name="quizFactorizationAnswer" type="hidden">
+  <% } %>
 </div>
+<script type="module" src="/assets/login-quiz.js"></script>

@@ -26,6 +26,8 @@ import { STATIC_DIR } from '../base-path.js';
 import { userExists, userInGroup, validateAliasName, getAliases, updateAliases, userIsAdmin, callChangePassword } from './system.js';
 import { ADMIN_GROUP, ALL_LISTS_USER } from '../defs.js';
 import Provider from 'oidc-provider';
+import { generatePrimeQuiz } from './auth-quiz-factorization.js';
+import { generateQuiz } from './auth-quiz.js';
 
 const staticDir = STATIC_DIR;
 
@@ -66,7 +68,13 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       return;
     }
     const loginToken = crypto.randomUUID();
+    const quiz = generatePrimeQuiz();
+    const {p, q, n} = quiz;
+    const answer1 = p;
+    const answer2 = q;
     req.session.loginToken = loginToken;
+    req.session.quizAnswer1 = answer1;
+    req.session.quizAnswer2 = answer2;
     const message = req.query.message ?? '';
     const error = req.query.error ?? '';
     res.render('login', {
@@ -74,6 +82,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       loginToken: loginToken,
       message,
       error,
+      quizFactorization: n,
     });
   });
 
@@ -199,13 +208,18 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     const username = req.body.username;
     const password = req.body.password2;
     const dummyPassword = req.body.password;
+    const answersStr = req.body.quizFactorizationAnswer as string;
     const token = req.body.token;
     const loginToken = req.session.loginToken;
-    if (!token || token != loginToken) {
+    const answer1 = req.session.quizAnswer1;
+    const answer2 = req.session.quizAnswer2;
+    if (!token || token != loginToken || !answer1 || !answer2 || !answersStr) {
       res.redirect('/login?error=invalid-token');
       return;
     }
-    if (dummyPassword) {
+    const realAnswers = [answer1, answer2].sort() as [string, string];
+    const answers = answersStr.split(',').sort() as [string, string];
+    if (dummyPassword || answers[0] != realAnswers[0] || answers[1] != realAnswers[1]) {
       res.redirect('/login?error=auth-error');
       return;
     }

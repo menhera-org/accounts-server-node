@@ -31,6 +31,8 @@ declare module 'express-session' {
   interface SessionData {
     username: string;
     loginToken: string;
+    quizAnswer1: string;
+    quizAnswer2: string;
   }
 }
 

@@ -22,6 +22,7 @@ import { Express } from "express";
 import { urlencodedParser } from "./middlewares.js";
 import { pamAuthenticatePromise } from "./pam-auth-client.js";
 import Provider, { InteractionResults } from "oidc-provider";
+import { generatePrimeQuiz } from './auth-quiz-factorization.js';
 
 export const defineOidcRoutes = (app: Express, provider: Provider) => {
   app.get('/interaction/:uid', async (req, res, next) => {
@@ -38,11 +39,18 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
         return;
       }
       const uuid = crypto.randomUUID();
+      const quiz = generatePrimeQuiz();
+      const {p, q, n} = quiz;
+      const answer1 = p;
+      const answer2 = q;
       req.session.loginToken = uuid;
+      req.session.quizAnswer1 = answer1;
+      req.session.quizAnswer2 = answer2;
       res.render('interaction-login', {
         title: 'Log in',
         uid,
         loginToken: uuid,
+        quizFactorization: n,
       });
       return;
     } else if (name == 'consent') {
@@ -63,9 +71,12 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
       const username = req.body.username;
       const password = req.body.password2;
       const dummyPassword = req.body.password;
+      const answersStr = req.body.quizFactorizationAnswer as string;
       const token = req.body.token;
       const loginToken = req.session.loginToken;
-      if (!token || token !== loginToken) {
+      const answer1 = req.session.quizAnswer1;
+      const answer2 = req.session.quizAnswer2;
+      if (!token || token !== loginToken || !answer1 || !answer2 || !answersStr) {
         res.status(400);
         const result = {
           error: 'not_authenticated',
@@ -74,7 +85,9 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
         provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
         return;
       }
-      if (dummyPassword) {
+      const realAnswers = [answer1, answer2].sort() as [string, string];
+      const answers = answersStr.split(',').sort() as [string, string];
+      if (dummyPassword || answers[0] != realAnswers[0] || answers[1] != realAnswers[1]) {
         res.status(400);
         const result = {
           error: 'not_authenticated',
