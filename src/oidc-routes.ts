@@ -58,57 +58,65 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
     next(new Error('invalid interaction'));
   });
 
-  app.post('/interaction/:uid/login', urlencodedParser, (req, res) => {
-    const username = req.body.username;
-    const password = req.body.password;
-    const token = req.body.token;
-    const loginToken = req.session.loginToken;
-    if (!token || token !== loginToken) {
-      res.status(400);
-      const result = {
-        error: 'not_authenticated',
-        error_description: 'Invalid request',
-      };
-      provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
-      return;
-    }
-    pamAuthenticatePromise({
-      username,
-      password,
-    }).then(() => {
-      req.session.regenerate(function (err) {
-        if (err) {
-          throw err;
-        }
-
-        req.session.username = username;
-
-        // save the session before redirection to ensure page
-        // load does not happen before session is saved
-        req.session.save(function (err) {
+  app.post('/interaction/:uid/login', urlencodedParser, (req, res, next) => {
+    try {
+      const username = req.body.username;
+      const password = req.body.password;
+      const token = req.body.token;
+      const loginToken = req.session.loginToken;
+      if (!token || token !== loginToken) {
+        res.status(400);
+        const result = {
+          error: 'not_authenticated',
+          error_description: 'Invalid request',
+        };
+        provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+        return;
+      }
+      pamAuthenticatePromise({
+        username,
+        password,
+      }).then(() => {
+        req.session.regenerate(function (err) {
           if (err) {
             console.error(err);
-            res.redirect('/login?error=internal-error');
+            next(err);
             return;
           }
-          const result = {
-            login: {
-              accountId: username,
-            },
-          };
-          provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
-        });
-      });
 
-    }).catch((e) => {
-      res.status(401);
-      const result = {
-        error: 'not_authenticated',
-        error_description: 'The username or password is incorrect',
-      };
-      provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
-      return;
-    });
+          req.session.username = username;
+
+          // save the session before redirection to ensure page
+          // load does not happen before session is saved
+          req.session.save(function (err) {
+            if (err) {
+              console.error(err);
+              res.redirect('/login?error=internal-error');
+              return;
+            }
+            const result = {
+              login: {
+                accountId: username,
+              },
+            };
+            provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+          });
+        });
+
+      }).catch((e) => {
+        res.status(401);
+        const result = {
+          error: 'not_authenticated',
+          error_description: 'The username or password is incorrect',
+        };
+        provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+        return;
+      }).catch((e) => {
+        next(e);
+      });
+    } catch (e) {
+      next(e);
+    }
   });
 
   app.post('/interaction/:uid/confirm', urlencodedParser, async (req, res, next) => {
