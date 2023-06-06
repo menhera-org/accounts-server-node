@@ -20,7 +20,7 @@
 import * as crypto from 'node:crypto';
 import { Express } from "express";
 import { urlencodedParser } from "./middlewares.js";
-import { pamAuthenticatePromise } from "node-linux-pam";
+import { pamAuthenticatePromise } from "./pam-auth-client.js";
 import Provider, { InteractionResults } from "oidc-provider";
 
 export const defineOidcRoutes = (app: Express, provider: Provider) => {

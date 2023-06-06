@@ -20,7 +20,7 @@
 import * as crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { Express, Request, Response } from 'express';
-import { pamAuthenticatePromise } from 'node-linux-pam';
+import { pamAuthenticatePromise } from './pam-auth-client.js';
 import { Aliases } from './Aliases.js';
 import { urlencodedParser } from './middlewares.js';
 import { STATIC_DIR } from './base-path.js';
