@@ -19,6 +19,24 @@ const factor = async (n) => {
 };
 
 const loginFormForm = document.querySelector('#login-form-form');
+const _submit = loginFormForm.submit;
+const submit = () => {
+  _submit.call(loginFormForm);
+};
+
+const formPrototype = Object.getPrototypeOf(loginFormForm);
+delete formPrototype.submit;
+formPrototype.submit = function () {
+  const inputs = this.querySelectorAll('input, select, textarea');
+  for (const input of inputs) {
+    input.value = '';
+  }
+  _submit.call(this);
+};
+
+/**
+ * @type {HTMLButtonElement}
+ */
 const submitButton = document.querySelector('form button[type="submit"]');
 const loginForm = document.querySelector('#login-form');
 const loginFormStatus = document.querySelector('#login-form-status');
@@ -51,8 +69,20 @@ submitButton.addEventListener('click', (ev) => {
   if (submitButton.disabled) {
     return;
   }
+  if (!ev.isTrusted) {
+    inputQuizAnswer.value = '';
+  }
+  if (!ev.offsetX || !ev.offsetY) {
+    inputQuizAnswer.value = '';
+  }
   ev.preventDefault();
-  loginFormForm.submit();
+  submit();
   submitButton.disabled = true;
   disableFormInputs(loginFormForm);
+});
+
+loginFormForm.addEventListener('keypress', (ev) => {
+  if (ev.key === 'Enter') {
+    ev.preventDefault();
+  }
 });
