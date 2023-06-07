@@ -1,5 +1,5 @@
 
-const WORKER_PATH = '/assets/factorization/quadratic-sieve.js';
+const WORKER_PATH = '/assets/factorization/elliptic-curve/worker.js';
 
 const factor = async (n) => {
   const bigN = BigInt(n);
