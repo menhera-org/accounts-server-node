@@ -26,7 +26,7 @@ export interface FactorizationQuiz {
   n: string;
 }
 
-const PRIME_BITS = 45;
+const PRIME_BITS = 48;
 
 const getBitLength = (n: bigint): number => {
   let i = 0;
