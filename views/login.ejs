@@ -1,7 +1,7 @@
 <%- include('header'); %>
 <h1>Log in</h1>
 <p id="error"></p>
-<form action="/auth" method="POST">
+<form id="login-form-form" action="/auth" method="POST">
   <%- include('login-form'); %>
   <input type="hidden" name="token" value="<%= loginToken %>">
   <p><button type="submit" disabled>Log in</button></p>

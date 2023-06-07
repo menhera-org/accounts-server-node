@@ -15,6 +15,7 @@ const factor = async (n) => {
   });
 };
 
+const loginFormForm = document.querySelector('#login-form-form');
 const submitButton = document.querySelector('form button[type="submit"]');
 const loginForm = document.querySelector('#login-form');
 const loginFormStatus = document.querySelector('#login-form-status');
@@ -40,7 +41,7 @@ submitButton.addEventListener('click', (ev) => {
   if (submitButton.disabled) {
     return;
   }
-  Promise.resolve().then(() => {
-    submitButton.disabled = true;
-  });
+  ev.preventDefault();
+  loginFormForm.submit();
+  submitButton.disabled = true;
 });
