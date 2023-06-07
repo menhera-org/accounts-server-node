@@ -33,6 +33,8 @@ declare module 'express-session' {
     loginToken: string;
     quizAnswer1: string;
     quizAnswer2: string;
+    loginFailureCount: number;
+    loginDisabledUntil: number;
   }
 }
 

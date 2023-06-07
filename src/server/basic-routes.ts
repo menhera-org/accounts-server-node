@@ -205,6 +205,22 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       res.redirect('/');
       return;
     }
+    const recordLoginFailure = () => {
+      if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
+        req.session.loginDisabledUntil = Date.now() + 600 * 1000;
+        return;
+      }
+      if (!req.session.loginFailureCount) {
+        req.session.loginFailureCount = 1;
+      } else {
+        req.session.loginFailureCount = Number(req.session.loginFailureCount) + 1;
+      }
+      const count = Number(req.session.loginFailureCount);
+      if (count > 2) {
+        req.session.loginDisabledUntil = Date.now() + 600 * 1000;
+        req.session.loginFailureCount = 0;
+      }
+    };
     const username = req.body.username;
     const password = req.body.password2;
     const dummyPassword = req.body.password;
@@ -214,12 +230,19 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     const answer1 = req.session.quizAnswer1;
     const answer2 = req.session.quizAnswer2;
     if (!token || token != loginToken || !answer1 || !answer2 || !answersStr) {
-      res.redirect('/login?error=invalid-token');
+      recordLoginFailure();
+      res.redirect('/login?error=auth-error');
+      return;
+    }
+    if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
+      recordLoginFailure();
+      res.redirect('/login?error=too-many-failures');
       return;
     }
     const realAnswers = [answer1, answer2].sort() as [string, string];
     const answers = answersStr.split(',').sort() as [string, string];
     if (dummyPassword || answers[0] != realAnswers[0] || answers[1] != realAnswers[1]) {
+      recordLoginFailure();
       res.redirect('/login?error=auth-error');
       return;
     }
@@ -249,6 +272,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       });
 
     }).catch((e) => {
+      recordLoginFailure();
       res.redirect('/login?error=auth-error');
       return;
     });

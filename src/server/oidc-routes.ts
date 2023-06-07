@@ -68,6 +68,22 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
 
   app.post('/interaction/:uid/login', urlencodedParser, (req, res, next) => {
     try {
+      const recordLoginFailure = () => {
+        if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
+          req.session.loginDisabledUntil = Date.now() + 600 * 1000;
+          return;
+        }
+        if (!req.session.loginFailureCount) {
+          req.session.loginFailureCount = 1;
+        } else {
+          req.session.loginFailureCount = Number(req.session.loginFailureCount) + 1;
+        }
+        const count = Number(req.session.loginFailureCount);
+        if (count > 2) {
+          req.session.loginDisabledUntil = Date.now() + 600 * 1000;
+          req.session.loginFailureCount = 0;
+        }
+      };
       const username = req.body.username;
       const password = req.body.password2;
       const dummyPassword = req.body.password;
@@ -77,6 +93,7 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
       const answer1 = req.session.quizAnswer1;
       const answer2 = req.session.quizAnswer2;
       if (!token || token !== loginToken || !answer1 || !answer2 || !answersStr) {
+        recordLoginFailure();
         res.status(400);
         const result = {
           error: 'not_authenticated',
@@ -85,9 +102,20 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
         provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
         return;
       }
+      if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
+        recordLoginFailure();
+        res.status(400);
+        const result = {
+          error: 'not_authenticated',
+          error_description: 'Too many login failures',
+        };
+        provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+        return;
+      }
       const realAnswers = [answer1, answer2].sort() as [string, string];
       const answers = answersStr.split(',').sort() as [string, string];
       if (dummyPassword || answers[0] != realAnswers[0] || answers[1] != realAnswers[1]) {
+        recordLoginFailure();
         res.status(400);
         const result = {
           error: 'not_authenticated',
@@ -127,6 +155,7 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
         });
 
       }).catch((e) => {
+        recordLoginFailure();
         res.status(401);
         const result = {
           error: 'not_authenticated',
