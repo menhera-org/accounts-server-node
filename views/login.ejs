@@ -4,6 +4,6 @@
 <form action="/auth" method="POST">
   <%- include('login-form'); %>
   <input type="hidden" name="token" value="<%= loginToken %>">
-  <p><button type="submit">Log in</button></p>
+  <p><button type="submit" disabled>Log in</button></p>
 </form>
 <%- include('footer'); %>

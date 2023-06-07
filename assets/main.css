@@ -181,6 +181,7 @@ ul.breadcrumbs > li:not(:last-child)::after {
 
 button:disabled {
   opacity: .5;
+  cursor: not-allowed;
 }
 
 label[for="login-form-password1"], input#login-form-password1 {
