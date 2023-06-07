@@ -35,3 +35,12 @@ if (!inputQuiz || !inputQuizAnswer) {
     loginFormStatus.textContent = 'Failed to factorize the number. Please contact the administrator.';
   });
 }
+
+submitButton.addEventListener('click', (ev) => {
+  if (submitButton.disabled) {
+    return;
+  }
+  Promise.resolve().then(() => {
+    submitButton.disabled = true;
+  });
+});
