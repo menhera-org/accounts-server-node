@@ -35,8 +35,8 @@ export const createApp = async (): Promise<Express> => {
       },
     }
   }));
-  app.use('/assets', setAllowCache, express.static(ASSETS_DIR));
   app.use(setNoCache);
+  app.use('/assets', setAllowCache, express.static(ASSETS_DIR));
 
   app.use(session({
     name: 'menhera.sid',
