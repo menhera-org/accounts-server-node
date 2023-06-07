@@ -30,9 +30,12 @@ export const createApp = async (): Promise<Express> => {
   app.set('view engine', 'ejs');
   app.use(helmet({
     contentSecurityPolicy: {
+      useDefaults: true,
       directives: {
         formAction: ["https:"],
+        scriptSrc: ["'self'", "'wasm-unsafe-eval'"],
       },
+      reportOnly: false,
     }
   }));
   app.use(setNoCache);
