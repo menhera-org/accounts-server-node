@@ -25,3 +25,8 @@ export const setNoCache = (req: express.Request, res: express.Response, next: ex
   res.set('Cache-Control', 'no-store');
   next();
 };
+
+export const setAllowCache = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  res.set('Cache-Control', 'public, must-revalidate, max-age=3600');
+  next();
+};

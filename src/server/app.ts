@@ -20,7 +20,7 @@
 import helmet from 'helmet';
 import session from 'express-session';
 import express, {Express} from 'express';
-import { setNoCache } from './middlewares.js';
+import { setNoCache, setAllowCache } from './middlewares.js';
 import { ASSETS_DIR } from '../base-path.js';
 import { SECRET, SESSION_MAX_AGE } from '../defs.js';
 
@@ -35,8 +35,8 @@ export const createApp = async (): Promise<Express> => {
       },
     }
   }));
+  app.use('/assets', setAllowCache, express.static(ASSETS_DIR));
   app.use(setNoCache);
-  app.use('/assets', express.static(ASSETS_DIR));
 
   app.use(session({
     name: 'menhera.sid',
