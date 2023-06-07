@@ -37,6 +37,13 @@ if (!inputQuiz || !inputQuizAnswer) {
   });
 }
 
+const disableFormInputs = (form) => {
+  const inputs = form.querySelectorAll('input:not([type="hidden"]), select, textarea, button');
+  for (const input of inputs) {
+    input.disabled = true;
+  }
+};
+
 submitButton.addEventListener('click', (ev) => {
   if (submitButton.disabled) {
     return;
@@ -44,4 +51,5 @@ submitButton.addEventListener('click', (ev) => {
   ev.preventDefault();
   loginFormForm.submit();
   submitButton.disabled = true;
+  disableFormInputs(loginFormForm);
 });
