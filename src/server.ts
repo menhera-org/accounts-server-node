@@ -57,6 +57,7 @@ createApp().then(async (app: Express) => {
       console.log('Request error in: ', req.url, err);
       res.status(400);
       res.render('error', {
+        title: 'Error',
         message: String(err?.message || err),
       });
       return;
