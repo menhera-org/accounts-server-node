@@ -34,22 +34,72 @@ formPrototype.submit = function () {
   _submit.call(this);
 };
 
+// no security required.
+const createRandomId = () => Math.random().toString(16).slice(2, 10);
+
+const createFormInputs = (answer, passwordId) => {
+  const element = document.createElement('div');
+  element.classList.add('login-form-inputs');
+  const INPUT_FIELD_USERNAME_ID = createRandomId();
+  const INPUT_FIELD_PASSWORD_ID = createRandomId();
+
+  const usernameLabel = document.createElement('label');
+  usernameLabel.htmlFor = INPUT_FIELD_USERNAME_ID;
+  usernameLabel.textContent = 'Username';
+  element.appendChild(usernameLabel);
+
+  const usernameInput = document.createElement('input');
+  usernameInput.id = INPUT_FIELD_USERNAME_ID;
+  usernameInput.name = 'username';
+  usernameInput.type = 'text';
+  usernameInput.required = true;
+  element.appendChild(usernameInput);
+
+  const passwordLabel = document.createElement('label');
+  passwordLabel.htmlFor = INPUT_FIELD_PASSWORD_ID;
+  passwordLabel.textContent = 'Password';
+  element.appendChild(passwordLabel);
+
+  const passwordInput = document.createElement('input');
+  passwordInput.id = INPUT_FIELD_PASSWORD_ID;
+  passwordInput.name = passwordId;
+  passwordInput.type = 'password';
+  passwordInput.required = true;
+  element.appendChild(passwordInput);
+
+  const quizAnserInput = document.createElement('input');
+  quizAnserInput.type = 'hidden';
+  quizAnserInput.name = 'quizFactorizationAnswer';
+  quizAnserInput.value = answer;
+  element.appendChild(quizAnserInput);
+
+  return element;
+};
+
 /**
  * @type {HTMLButtonElement}
  */
-const submitButton = document.querySelector('form button[type="submit"]');
-const loginForm = document.querySelector('#login-form');
+const submitButton = loginFormForm.querySelector('button[type="submit"]');
+const loginFormInputsPrototype = loginFormForm.querySelector('.login-form-inputs');
+
+const loginFormPlaceholder = document.querySelector('#login-form-placeholder');
+
 const loginFormStatus = document.querySelector('#login-form-status');
-const inputQuiz = document.querySelector('#login-form-quiz-factorization');
+const inputQuiz = loginFormInputsPrototype.querySelector('input[name="quizFactorization"]');
+const inputPasswordId = loginFormInputsPrototype.querySelector('input[name="passwordId"]');
+const inputQuizValue = inputQuiz?.value;
+const passwordId = inputPasswordId.value;
+
 const inputQuizAnswer = document.querySelector('#login-form-quiz-factorization-answer');
-if (!inputQuiz || !inputQuizAnswer) {
-  loginForm.hidden = false;
-  submitButton.disabled = false;
+if (!inputQuizValue) {
+  throw new Error('Quiz input not found.');
 } else {
-  const n = inputQuiz.value;
+  const n = inputQuizValue;
   factor(n).then((factors) => {
-    inputQuizAnswer.value = factors.join(',');
-    loginForm.hidden = false;
+    loginFormInputsPrototype.remove();
+    const loginFormInputs = createFormInputs(factors.join(','), passwordId);
+    loginFormPlaceholder.textContent = '';
+    loginFormPlaceholder.appendChild(loginFormInputs);
     submitButton.disabled = false;
     loginFormStatus.textContent = 'You can log in now.';
   }).catch((e) => {

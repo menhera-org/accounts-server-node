@@ -35,6 +35,8 @@ declare module 'express-session' {
     quizAnswer2: string;
     loginFailureCount: number;
     loginDisabledUntil: number;
+    passwordFieldName: string;
+    loginReturnTo: string;
   }
 }
 

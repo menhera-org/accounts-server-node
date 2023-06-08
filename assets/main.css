@@ -86,7 +86,7 @@ button[type="submit"]:active {
   background-color: #195168;
 }
 
-#login-form:not([hidden]) {
+.login-form-inputs:not([hidden]) {
   display: grid;
   grid-template-columns: max-content 1fr;
   align-items: center;
@@ -94,7 +94,7 @@ button[type="submit"]:active {
   row-gap: .5em;
 }
 
-#login-form input:is([type="text"], [type="password"]) {
+.login-form-inputs input:is([type="text"], [type="password"]) {
   min-inline-size: 0;
   inline-size: 100%;
   box-sizing: border-box;
@@ -182,8 +182,4 @@ ul.breadcrumbs > li:not(:last-child)::after {
 button:disabled {
   opacity: .5;
   cursor: not-allowed;
-}
-
-label[for="login-form-password1"], input#login-form-password1 {
-  display: none;
 }

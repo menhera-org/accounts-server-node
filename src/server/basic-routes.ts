@@ -75,11 +75,14 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     req.session.loginToken = loginToken;
     req.session.quizAnswer1 = answer1;
     req.session.quizAnswer2 = answer2;
+    const passwordId = `password-${crypto.randomUUID()}`;
+    req.session.passwordFieldName = passwordId;
     const message = req.query.message ?? '';
     const error = req.query.error ?? '';
     res.render('login', {
       title: 'Log in',
       loginToken: loginToken,
+      passwordId,
       message,
       error,
       quizFactorization: n,
@@ -200,9 +203,14 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     }
   });
 
-  app.post('/auth', urlencodedParser, (req, res) => {
+  app.post('/auth', urlencodedParser, (req, res, next) => {
+    const loginReturnTo = req.session.loginReturnTo || '/';
+    if (!loginReturnTo.startsWith('/') || loginReturnTo.startsWith('//')) {
+      next(new Error('invalid loginReturnTo'));
+      return;
+    }
     if (req.session.username) {
-      res.redirect('/');
+      res.redirect(loginReturnTo);
       return;
     }
     const recordLoginFailure = () => {
@@ -221,8 +229,13 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
         req.session.loginFailureCount = 0;
       }
     };
+    const passwordId = req.session.passwordFieldName;
+    if (!passwordId) {
+      res.redirect('/login?error=auth-error');
+      return;
+    }
     const username = req.body.username;
-    const password = req.body.password2;
+    const password = req.body[passwordId];
     const dummyPassword = req.body.password;
     const answersStr = req.body.quizFactorizationAnswer as string;
     const token = req.body.token;
@@ -267,7 +280,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
             res.redirect('/login?error=internal-error');
             return;
           }
-          res.redirect('/');
+          res.redirect(loginReturnTo);
         });
       });
 

@@ -17,24 +17,9 @@
   @license
 */
 
-import * as fs from 'node:fs/promises';
 import { execFile } from 'node:child_process';
-import { ALIASES_PATH, ADMIN_GROUP } from '../defs.js';
+import { ADMIN_GROUP } from '../defs.js';
 import { sendMessage } from './child-channel.js';
-
-const aliasesPath = ALIASES_PATH;
-
-const executePostalias = async (aliasesPath: string) => {
-  return new Promise<void>((resolve, reject) => {
-    execFile('postalias', [aliasesPath], (error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve();
-    });
-  });
-};
 
 export const userExists = async (username: string) => {
   return new Promise<boolean>((resolve, reject) => {

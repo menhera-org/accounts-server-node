@@ -17,12 +17,7 @@
   @license
 */
 
-import { execFile } from 'node:child_process';
-import * as path from 'node:path';
-import { BASE_PATH } from "../base-path.js";
 import { sendMessage } from './child-channel.js';
-
-const AUTH_SCRIPT_PATH = path.resolve(BASE_PATH, 'dist/pam-auth.js');
 
 export const pamAuthenticatePromise = async ({username, password}: {username: string, password: string}): Promise<void> => {
   await sendMessage('pam_auth', {username, password});
