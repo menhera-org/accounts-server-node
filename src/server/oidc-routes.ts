@@ -17,14 +17,27 @@
   @license
 */
 
-import { Express } from "express";
+import { Express, Request, Response } from "express";
 import { urlencodedParser } from "./middlewares.js";
 import Provider, { InteractionResults } from "oidc-provider";
+import { UserError } from "../lib/UserError.js";
+
+const getInteraction = async (provider: Provider, req: Request, res: Response) => {
+  try {
+    return await provider.interactionDetails(req, res);
+  } catch (e) {
+    return null;
+  }
+};
 
 export const defineOidcRoutes = (app: Express, provider: Provider) => {
   app.get('/interaction/:uid', async (req, res, next) => {
     try {
-      const details = await provider.interactionDetails(req, res);
+      const details = await getInteraction(provider, req, res);
+      if (!details) {
+        next(new UserError('interaction session not found'));
+        return;
+      }
       const { uid, prompt: { name, details: promptDetails }, params } = details;
       if (name == 'login') {
         if (req.session.username) {
@@ -49,7 +62,7 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
         return;
       }
 
-      next(new Error('invalid interaction'));
+      next(new UserError('invalid interaction'));
     } catch (e) {
       next(e);
     }
@@ -83,7 +96,7 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
       const interactionDetails = await provider.interactionDetails(req, res);
       const { prompt: { name, details: promptDetails } } = interactionDetails;
       if ('consent' !== name) {
-        next(new Error('invalid interaction'));
+        next(new UserError('invalid interaction'));
         return;
       }
 

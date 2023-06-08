@@ -204,91 +204,95 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
   });
 
   app.post('/auth', urlencodedParser, (req, res, next) => {
-    const loginReturnTo = req.session.loginReturnTo || '/';
-    if (!loginReturnTo.startsWith('/') || loginReturnTo.startsWith('//')) {
-      next(new Error('invalid loginReturnTo'));
-      return;
-    }
-    if (req.session.username) {
-      res.redirect(loginReturnTo);
-      return;
-    }
-    const recordLoginFailure = () => {
-      if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
-        req.session.loginDisabledUntil = Date.now() + 600 * 1000;
+    try {
+      const loginReturnTo = req.session.loginReturnTo || '/';
+      if (!loginReturnTo.startsWith('/') || loginReturnTo.startsWith('//')) {
+        next(new Error('invalid loginReturnTo'));
         return;
       }
-      if (!req.session.loginFailureCount) {
-        req.session.loginFailureCount = 1;
-      } else {
-        req.session.loginFailureCount = Number(req.session.loginFailureCount) + 1;
+      if (req.session.username) {
+        res.redirect(loginReturnTo);
+        return;
       }
-      const count = Number(req.session.loginFailureCount);
-      if (count > 2) {
-        req.session.loginDisabledUntil = Date.now() + 600 * 1000;
-        req.session.loginFailureCount = 0;
-      }
-    };
-    const passwordId = req.session.passwordFieldName;
-    if (!passwordId) {
-      res.redirect('/login?error=auth-error');
-      return;
-    }
-    const username = req.body.username;
-    const password = req.body[passwordId];
-    const dummyPassword = req.body.password;
-    const answersStr = req.body.quizFactorizationAnswer as string;
-    const token = req.body.token;
-    const loginToken = req.session.loginToken;
-    const answer1 = req.session.quizAnswer1;
-    const answer2 = req.session.quizAnswer2;
-    if (!token || token != loginToken || !answer1 || !answer2 || !answersStr) {
-      recordLoginFailure();
-      res.redirect('/login?error=auth-error');
-      return;
-    }
-    if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
-      recordLoginFailure();
-      res.redirect('/login?error=too-many-failures');
-      return;
-    }
-    const realAnswers = [answer1, answer2].sort() as [string, string];
-    const answers = answersStr.split(',').sort() as [string, string];
-    if (dummyPassword || answers[0] != realAnswers[0] || answers[1] != realAnswers[1]) {
-      recordLoginFailure();
-      res.redirect('/login?error=auth-error');
-      return;
-    }
-    pamAuthenticatePromise({
-      username,
-      password,
-    }).then(() => {
-      req.session.regenerate(function (err) {
-        if (err) {
-          console.error(err);
-          res.redirect('/login?error=internal-error');
+      const recordLoginFailure = () => {
+        if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
+          req.session.loginDisabledUntil = Date.now() + 600 * 1000;
           return;
         }
-
-        req.session.username = username;
-
-        // save the session before redirection to ensure page
-        // load does not happen before session is saved
-        req.session.save(function (err) {
+        if (!req.session.loginFailureCount) {
+          req.session.loginFailureCount = 1;
+        } else {
+          req.session.loginFailureCount = Number(req.session.loginFailureCount) + 1;
+        }
+        const count = Number(req.session.loginFailureCount);
+        if (count > 2) {
+          req.session.loginDisabledUntil = Date.now() + 600 * 1000;
+          req.session.loginFailureCount = 0;
+        }
+      };
+      const passwordId = req.session.passwordFieldName;
+      if (!passwordId) {
+        res.redirect('/login?error=auth-error');
+        return;
+      }
+      const username = req.body.username;
+      const password = req.body[passwordId];
+      const dummyPassword = req.body.password;
+      const answersStr = req.body.quizFactorizationAnswer as string;
+      const token = req.body.token;
+      const loginToken = req.session.loginToken;
+      const answer1 = req.session.quizAnswer1;
+      const answer2 = req.session.quizAnswer2;
+      if (!token || token != loginToken || !answer1 || !answer2 || !answersStr) {
+        recordLoginFailure();
+        res.redirect('/login?error=auth-error');
+        return;
+      }
+      if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
+        recordLoginFailure();
+        res.redirect('/login?error=too-many-failures');
+        return;
+      }
+      const realAnswers = [answer1, answer2].sort() as [string, string];
+      const answers = answersStr.split(',').sort() as [string, string];
+      if (dummyPassword || answers[0] != realAnswers[0] || answers[1] != realAnswers[1]) {
+        recordLoginFailure();
+        res.redirect('/login?error=auth-error');
+        return;
+      }
+      pamAuthenticatePromise({
+        username,
+        password,
+      }).then(() => {
+        req.session.regenerate(function (err) {
           if (err) {
             console.error(err);
             res.redirect('/login?error=internal-error');
             return;
           }
-          res.redirect(loginReturnTo);
-        });
-      });
 
-    }).catch((e) => {
-      recordLoginFailure();
-      res.redirect('/login?error=auth-error');
-      return;
-    });
+          req.session.username = username;
+
+          // save the session before redirection to ensure page
+          // load does not happen before session is saved
+          req.session.save(function (err) {
+            if (err) {
+              console.error(err);
+              res.redirect('/login?error=internal-error');
+              return;
+            }
+            res.redirect(loginReturnTo);
+          });
+        });
+
+      }).catch((e) => {
+        recordLoginFailure();
+        res.redirect('/login?error=auth-error');
+        return;
+      });
+    } catch (e) {
+      next(e);
+    }
   });
 
   app.post('/add-alias', urlencodedParser, async (req, res) => {

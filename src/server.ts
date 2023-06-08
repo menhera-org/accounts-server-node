@@ -26,6 +26,8 @@ import { getProvider } from './server/get-provider.js';
 import { defineOidcRoutes } from './server/oidc-routes.js';
 import { sendMessage } from './server/child-channel.js';
 import { ServerConfiguration } from './lib/ServerConfiguration.js';
+import { Express, NextFunction, Request, Response } from 'express';
+import { UserError } from './lib/UserError.js';
 
 declare module 'express-session' {
   interface SessionData {
@@ -42,13 +44,29 @@ declare module 'express-session' {
 
 process.title = 'accounts-server-http';
 
-createApp().then(async (app) => {
+createApp().then(async (app: Express) => {
   const config = await sendMessage('server_config_get', null) as ServerConfiguration;
   const provider = await getProvider(config);
   app.use('/oidc', provider.callback());
 
   defineRoutes(app, provider);
   defineOidcRoutes(app, provider);
+
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err instanceof UserError) {
+      console.log('Request error in: ', req.url, err);
+      res.status(400);
+      res.render('error', {
+        message: String(err?.message || err),
+      });
+      return;
+    }
+    console.error('Request error in: ', req.url, err);
+    res.status(500);
+    res.render('error', {
+      message: String(err?.message || err),
+    });
+  });
 
   app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
