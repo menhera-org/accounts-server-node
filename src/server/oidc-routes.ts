@@ -23,32 +23,36 @@ import Provider, { InteractionResults } from "oidc-provider";
 
 export const defineOidcRoutes = (app: Express, provider: Provider) => {
   app.get('/interaction/:uid', async (req, res, next) => {
-    const details = await provider.interactionDetails(req, res);
-    const { uid, prompt: { name, details: promptDetails }, params } = details;
-    if (name == 'login') {
-      if (req.session.username) {
-        const result = {
-          login: {
-            accountId: req.session.username,
-          },
-        };
-        await provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+    try {
+      const details = await provider.interactionDetails(req, res);
+      const { uid, prompt: { name, details: promptDetails }, params } = details;
+      if (name == 'login') {
+        if (req.session.username) {
+          const result = {
+            login: {
+              accountId: req.session.username,
+            },
+          };
+          await provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+          return;
+        }
+        req.session.loginReturnTo = `/interaction/${uid}/login`;
+        res.redirect('/login');
+        return;
+      } else if (name == 'consent') {
+        const clientId = params.client_id;
+        res.render('interaction-consent', {
+          title: `Log in to ${clientId}`,
+          clientId,
+          uid,
+        });
         return;
       }
-      req.session.loginReturnTo = `/interaction/${uid}/login`;
-      res.redirect('/login');
-      return;
-    } else if (name == 'consent') {
-      const clientId = params.client_id;
-      res.render('interaction-consent', {
-        title: `Log in to ${clientId}`,
-        clientId,
-        uid,
-      });
-      return;
-    }
 
-    next(new Error('invalid interaction'));
+      next(new Error('invalid interaction'));
+    } catch (e) {
+      next(e);
+    }
   });
 
   app.get('/interaction/:uid/login', urlencodedParser, async (req, res, next) => {
