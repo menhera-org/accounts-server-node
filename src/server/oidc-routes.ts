@@ -17,12 +17,9 @@
   @license
 */
 
-import * as crypto from 'node:crypto';
 import { Express } from "express";
 import { urlencodedParser } from "./middlewares.js";
-import { pamAuthenticatePromise } from "./pam-auth-client.js";
 import Provider, { InteractionResults } from "oidc-provider";
-import { generatePrimeQuiz } from './auth-quiz-factorization.js';
 
 export const defineOidcRoutes = (app: Express, provider: Provider) => {
   app.get('/interaction/:uid', async (req, res, next) => {
