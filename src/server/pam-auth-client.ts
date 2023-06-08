@@ -20,21 +20,10 @@
 import { execFile } from 'node:child_process';
 import * as path from 'node:path';
 import { BASE_PATH } from "../base-path.js";
+import { sendMessage } from './child-channel.js';
 
 const AUTH_SCRIPT_PATH = path.resolve(BASE_PATH, 'dist/pam-auth.js');
 
 export const pamAuthenticatePromise = async ({username, password}: {username: string, password: string}): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    const child = execFile('node', [AUTH_SCRIPT_PATH, username], (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-    child.stdout?.pipe(process.stdout);
-    child.stderr?.pipe(process.stderr);
-    child.stdin?.write(password);
-    child.stdin?.end();
-  });
+  await sendMessage('pam_auth', {username, password});
 };
