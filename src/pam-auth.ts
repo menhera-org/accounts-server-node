@@ -26,6 +26,8 @@ import { pamAuthenticatePromise } from "node-linux-pam";
 process.title = 'accounts-server-pam-auth';
 const username = process.argv[2] ?? '';
 
+const PAM_SERVICE_NAME = process.env.PAM_SERVICE_NAME ?? 'login';
+
 process.stdin.resume();
 process.stdin.setEncoding('utf-8');
 
@@ -37,7 +39,7 @@ process.stdin.on('data', (chunk) => {
 
 process.stdin.on('end', () => {
   const password = input.trim();
-  pamAuthenticatePromise({ username, password }).then(() => {
+  pamAuthenticatePromise({ username, password, serviceName: PAM_SERVICE_NAME }).then(() => {
     process.exit(0);
   }).catch((e) => {
     console.error(e);
