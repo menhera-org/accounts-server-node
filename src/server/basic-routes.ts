@@ -211,6 +211,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
         return;
       }
       if (req.session.username) {
+        req.session.loginReturnTo = '';
         res.redirect(loginReturnTo);
         return;
       }
@@ -281,6 +282,8 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
               res.redirect('/login?error=internal-error');
               return;
             }
+
+            req.session.loginReturnTo = '';
             res.redirect(loginReturnTo);
           });
         });
