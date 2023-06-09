@@ -8,6 +8,7 @@ const factor = async (n) => {
     worker.onmessage = (ev) => {
       if (ev.data === true) {
         worker.postMessage(bigN);
+        console.log('factorization started');
         return;
       }
       resolve(ev.data);
