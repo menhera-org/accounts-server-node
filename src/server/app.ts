@@ -33,7 +33,7 @@ export const createApp = async (): Promise<Express> => {
       useDefaults: true,
       directives: {
         formAction: ["https:"],
-        scriptSrc: ["'self'", "'wasm-unsafe-eval'"],
+        scriptSrc: ["'self'", "'unsafe-eval'", "'wasm-unsafe-eval'"],
       },
       reportOnly: false,
     }
