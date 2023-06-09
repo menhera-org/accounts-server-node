@@ -47,7 +47,8 @@ export const createApp = async (): Promise<Express> => {
     saveUninitialized: true,
     cookie: {
       maxAge: SESSION_MAX_AGE,
-      secure: false,
+      secure: true,
+      sameSite: 'lax',
     },
     resave: false,
   }));
