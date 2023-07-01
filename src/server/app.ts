@@ -51,6 +51,7 @@ export const createApp = async (): Promise<Express> => {
       sameSite: 'lax',
     },
     resave: false,
+    rolling: true,
   }));
   return app;
 };
