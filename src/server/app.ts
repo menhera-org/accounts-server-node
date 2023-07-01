@@ -19,12 +19,20 @@
 
 import helmet from 'helmet';
 import session from 'express-session';
-import express, {Express} from 'express';
+import express, { Express } from 'express';
 import { setNoCache, setAllowCache } from './middlewares.js';
 import { ASSETS_DIR } from '../base-path.js';
 import { SECRET, SESSION_MAX_AGE } from '../defs.js';
+import { connect, getNativeClient } from './db.js';
+import MongoStore from 'connect-mongo';
 
 export const createApp = async (): Promise<Express> => {
+  await connect();
+  const client = getNativeClient();
+  const sessionStore = MongoStore.create({
+    client,
+    collectionName: 'express-sessions',
+  });
   const app = express();
   app.set('trust proxy', 'loopback');
   app.set('view engine', 'ejs');
@@ -52,6 +60,7 @@ export const createApp = async (): Promise<Express> => {
     },
     resave: false,
     rolling: true,
+    store: sessionStore,
   }));
   return app;
 };

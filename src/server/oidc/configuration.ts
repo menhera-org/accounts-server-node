@@ -21,6 +21,7 @@ import { Configuration, AccountClaims } from "oidc-provider";
 import { userExists } from "../system.js";
 import { USER_EMAIL_DOMAIN } from '../../defs.js';
 import { ServerConfiguration } from '../../lib/ServerConfiguration.js';
+import { MongoDbAdapter } from "./adapter.js";
 
 export const getConfiguration = async (serverConfig: ServerConfiguration): Promise<Configuration> => {
   const clients = serverConfig.clients;
@@ -98,5 +99,6 @@ export const getConfiguration = async (serverConfig: ServerConfiguration): Promi
       RefreshToken: 60 * 60 * 24 * 14, // 2 weeks
       Session: 60 * 60 * 24 * 14, // 2 weeks
     },
+    adapter: MongoDbAdapter,
   };
 };

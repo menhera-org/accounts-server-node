@@ -23,6 +23,7 @@ export const ALL_LISTS_USER = process.env.ALL_LISTS_USER || 'root';
 export const OIDC_ISSUER = process.env.OIDC_ISSUER || 'http://localhost:3000';
 export const USER_EMAIL_DOMAIN = process.env.USER_EMAIL_DOMAIN || 'menhera.org';
 export const SERVER_USER = process.env.SERVER_USER || 'nobody';
+export const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/accounts';
 
 export const SESSION_MAX_AGE = 1000 * 60 * 60 * 24; // 1 day
 
