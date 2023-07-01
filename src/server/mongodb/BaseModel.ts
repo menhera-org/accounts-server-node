@@ -33,7 +33,7 @@ BaseModelSchema.index(
  * grantId must be unique for every authentication request model
  */
 BaseModelSchema.index(
-  { "payload.grantId": 1 },
+  { "payload.grantId": 1, "payload.kind": 1 },
   {
     unique: true,
     partialFilterExpression: {
