@@ -33,6 +33,7 @@ export class MongoDbAdapter {
    *
    */
   async upsert(id: string, payload: any, expiresIn: number): Promise<any> {
+    console.debug("upsert", id, payload, expiresIn);
     return await BaseModel.updateOne(
       {
         key: id,
