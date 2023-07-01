@@ -47,6 +47,9 @@ process.title = 'accounts-server-http';
 createApp().then(async (app: Express) => {
   const config = await sendMessage('server_config_get', null) as ServerConfiguration;
   const provider = await getProvider(config);
+  provider.on('server_error', (ctx, error) => {
+    console.error('oidc-provider error', error);
+  });
   app.use('/oidc', provider.callback());
 
   defineRoutes(app, provider);
