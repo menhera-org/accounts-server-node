@@ -32,23 +32,23 @@ BaseModelSchema.index(
 /**
  * grantId must be unique for every authentication request model
  */
-BaseModelSchema.index(
-  { "payload.grantId": 1, "payload.kind": 1 },
-  {
-    unique: true,
-    partialFilterExpression: {
-      "payload.kind": {
-        $in: [
-          "AccessToken",
-          "AuthorizationCode",
-          "RefreshToken",
-          "DeviceCode",
-          "BackchannelAuthenticationRequest",
-        ],
-      },
-    },
-  }
-);
+// BaseModelSchema.index(
+//   { "payload.grantId": 1, "payload.kind": 1 },
+//   {
+//     unique: true,
+//     partialFilterExpression: {
+//       "payload.kind": {
+//         $in: [
+//           "AccessToken",
+//           "AuthorizationCode",
+//           "RefreshToken",
+//           "DeviceCode",
+//           "BackchannelAuthenticationRequest",
+//         ],
+//       },
+//     },
+//   }
+// );
 
 /**
  * userCode must be unique for every model == DeviceCode
