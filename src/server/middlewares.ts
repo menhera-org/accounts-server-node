@@ -30,3 +30,9 @@ export const setAllowCache = (req: express.Request, res: express.Response, next:
   res.set('Cache-Control', 'public, must-revalidate, max-age=3600');
   next();
 };
+
+export const setIsolation = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  res.set('Cross-Origin-Opener-Policy', 'same-origin');
+  res.set('Cross-Origin-Embedder-Policy', 'require-corp');
+  next();
+};
