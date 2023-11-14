@@ -11,6 +11,7 @@ const factor = async (n) => {
         console.log('factorization started');
         return;
       }
+      worker.terminate();
       resolve(ev.data);
     };
     worker.onerror = (ev) => {
