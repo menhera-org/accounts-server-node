@@ -53,6 +53,11 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
         res.redirect('/login');
         return;
       } else if (name == 'consent') {
+        if (!req.session.username) {
+          req.session.loginReturnTo = `/interaction/${uid}/consent`;
+          res.redirect('/login');
+          return;
+        }
         const clientId = params.client_id;
         res.render('interaction-consent', {
           title: `Log in to ${clientId}`,
