@@ -57,6 +57,7 @@ export const getConfiguration = async (serverConfig: ServerConfiguration): Promi
             };
             const profile = {
               name: id,
+              preferred_username: id,
             };
             const accountInfo: AccountClaims = {
               sub: id,
@@ -100,5 +101,21 @@ export const getConfiguration = async (serverConfig: ServerConfiguration): Promi
       Session: 60 * 60 * 24 * 14, // 2 weeks
     },
     adapter: MongoDbAdapter,
+    extraTokenClaims: async (ctx, token) => {
+      if (token.kind !== 'AccessToken') {
+        return {};
+      }
+      const { accountId } = token;
+      const user = await userExists(accountId);
+      if (!user) {
+        return {};
+      }
+      return {
+        email: `${accountId}@${USER_EMAIL_DOMAIN}`,
+        email_verified: true,
+        name: accountId,
+        preferred_username: accountId,
+      };
+    },
   };
 };
