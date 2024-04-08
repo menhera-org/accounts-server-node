@@ -31,6 +31,9 @@ const CLIENTS_PATH = path.resolve(BASE_PATH, ORIG_CLIENTS_PATH);
 const ORIG_COOKIES_KEYS_PATH = process.env.COOKIES_KEYS_PATH || 'cookies-keys.json';
 const COOKIES_KEYS_PATH = path.resolve(BASE_PATH, ORIG_COOKIES_KEYS_PATH);
 
+const ORIG_RESTRICTED_CLIENTS_PATH = process.env.RESTRICTED_CLIENTS_PATH || 'restricted-clients.json';
+const RESTRICTED_CLIENTS_PATH = path.resolve(BASE_PATH, ORIG_RESTRICTED_CLIENTS_PATH);
+
 const getJson = async (path: string): Promise<any> => {
   const json = await fs.readFile(path, 'utf-8');
   return JSON.parse(json);
@@ -40,9 +43,11 @@ export const getServerConfiguration = async (): Promise<ServerConfiguration> => 
   const clients = await getJson(CLIENTS_PATH);
   const jwks = await getJson(JWKS_PATH);
   const cookieKeys = await getJson(COOKIES_KEYS_PATH);
+  const restrictedClients = await getJson(RESTRICTED_CLIENTS_PATH);
   return {
     clients,
     jwks,
     cookieKeys,
+    restrictedClientIds: restrictedClients,
   };
 };

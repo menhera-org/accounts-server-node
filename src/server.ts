@@ -53,7 +53,7 @@ createApp().then(async (app: Express) => {
   app.use('/oidc', provider.callback());
 
   defineRoutes(app, provider);
-  defineOidcRoutes(app, provider);
+  defineOidcRoutes(app, provider, config);
 
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     if (err instanceof UserError) {

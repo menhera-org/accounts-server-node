@@ -23,4 +23,5 @@ export interface ServerConfiguration {
   jwks: JWKS;
   clients: ClientMetadata[];
   cookieKeys: string[];
+  restrictedClientIds: string[];
 }

@@ -21,6 +21,10 @@ import { Express, Request, Response } from "express";
 import { urlencodedParser } from "./middlewares.js";
 import Provider, { InteractionResults } from "oidc-provider";
 import { UserError } from "../lib/UserError.js";
+import { ServerConfiguration } from "../lib/ServerConfiguration.js";
+import { getGroups } from "../lib/unix-users.js";
+
+const INTERNAL_GROUP = process.env.INTERNAL_GROUP || 'internal';
 
 const getInteraction = async (provider: Provider, req: Request, res: Response) => {
   try {
@@ -30,7 +34,7 @@ const getInteraction = async (provider: Provider, req: Request, res: Response) =
   }
 };
 
-export const defineOidcRoutes = (app: Express, provider: Provider) => {
+export const defineOidcRoutes = (app: Express, provider: Provider, serverConfig: ServerConfiguration) => {
   app.get('/interaction/:uid', async (req, res, next) => {
     try {
       const details = await getInteraction(provider, req, res);
@@ -58,7 +62,14 @@ export const defineOidcRoutes = (app: Express, provider: Provider) => {
           res.redirect('/login');
           return;
         }
-        const clientId = params.client_id;
+        const clientId = params.client_id as string;
+        if (serverConfig.restrictedClientIds.includes(clientId)) {
+          const userGroups = await getGroups(req.session.username);
+          if (!userGroups.includes(INTERNAL_GROUP)) {
+            next(new UserError('Unauthorized access'));
+            return;
+          }
+        }
         res.render('interaction-consent', {
           title: `Log in to ${clientId}`,
           clientId,
