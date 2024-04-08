@@ -19,6 +19,7 @@
 
 import { Configuration, AccountClaims } from "oidc-provider";
 import { userExists } from "../system.js";
+import { getGroups } from "../../lib/unix-users.js";
 import { USER_EMAIL_DOMAIN } from '../../defs.js';
 import { ServerConfiguration } from '../../lib/ServerConfiguration.js';
 import { MongoDbAdapter } from "./adapter.js";
@@ -42,6 +43,7 @@ export const getConfiguration = async (serverConfig: ServerConfiguration): Promi
       "offline_access",
       "email",
       "profile",
+      "groups",
     ],
     clientBasedCORS(ctx, origin, client) {
       return true;
@@ -62,6 +64,13 @@ export const getConfiguration = async (serverConfig: ServerConfiguration): Promi
             const accountInfo: AccountClaims = {
               sub: id,
             };
+            const groups = {
+              groups: await getGroups(id),
+            };
+
+            // unconditionally add groups to the account info
+            Object.assign(accountInfo, groups);
+
             const scopes = scope.split(" ");
             if (scopes.includes('email')) {
               Object.assign(accountInfo, email);

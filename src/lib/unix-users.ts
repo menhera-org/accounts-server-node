@@ -69,3 +69,21 @@ export const getUserIds = async (user: string): Promise<UserIds> => {
   ]);
   return { uid, gid };
 };
+
+const _getGroups = (user: string) => new Promise<string[]>((resolve, reject) => {
+  const child = execFile('id', ['-Gnz', user], (err, stdout) => {
+    if (err) {
+      reject(err);
+      return;
+    }
+    const users = stdout.split('\0');
+    resolve(users);
+  });
+  child.stderr?.pipe(process.stderr);
+  child.stdin?.end();
+});
+
+export const getGroups = async (user: string): Promise<string[]> => {
+  const groups = await _getGroups(user);
+  return groups;
+};
