@@ -77,7 +77,7 @@ const _getGroups = (user: string) => new Promise<string[]>((resolve, reject) => 
       return;
     }
     const users = stdout.split('\0');
-    resolve(users);
+    resolve(users.filter((user) => user !== ''));
   });
   child.stderr?.pipe(process.stderr);
   child.stdin?.end();
