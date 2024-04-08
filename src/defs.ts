@@ -18,6 +18,7 @@
 */
 
 export const ADMIN_GROUP = process.env.ADMIN_GROUP || 'sudo';
+export const INTERNAL_GROUP = process.env.INTERNAL_GROUP || 'internal';
 export const ALIASES_PATH = process.env.ALIASES_PATH || '/etc/aliases';
 export const ALL_LISTS_USER = process.env.ALL_LISTS_USER || 'root';
 export const OIDC_ISSUER = process.env.OIDC_ISSUER || 'http://localhost:3000';

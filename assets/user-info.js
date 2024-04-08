@@ -8,6 +8,13 @@ fetch('/get-username')
     document.body.classList.add('admin');
     document.getElementById('username').textContent += ' (admin)';
   }
+  if (data.is_internal) {
+    document.body.classList.add('internal');
+    document.getElementById('username').textContent += ' (internal)';
+  } else {
+    document.body.classList.add('external');
+    document.getElementById('username').textContent += ' (external)';
+  }
 })
 .catch((e) => {
   console.error(e);

@@ -23,11 +23,12 @@ import { pamAuthenticatePromise } from './pam-auth-client.js';
 import { Aliases } from '../lib/Aliases.js';
 import { urlencodedParser } from './middlewares.js';
 import { STATIC_DIR } from '../base-path.js';
-import { userExists, userInGroup, validateAliasName, getAliases, updateAliases, userIsAdmin, callChangePassword } from './system.js';
-import { ADMIN_GROUP, ALL_LISTS_USER } from '../defs.js';
+import { userExists, userInGroup, validateAliasName, getAliases, updateAliases, userIsAdmin, callChangePassword, userIsInternal } from './system.js';
+import { ADMIN_GROUP, ALL_LISTS_USER, INTERNAL_GROUP } from '../defs.js';
 import Provider from 'oidc-provider';
 import { generatePrimeQuiz } from './auth-quiz-factorization.js';
 import { generateQuiz } from './auth-quiz.js';
+import { getGroups } from '../lib/unix-users.js';
 
 const staticDir = STATIC_DIR;
 
@@ -43,10 +44,23 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       return;
     }
     const message = req.query.message ?? '';
-    res.render('index', {
-      username: session.username,
-      title: 'Accout management',
-      message,
+    userIsInternal(session.username).then((isInternal) => {
+      if (!isInternal) {
+        res.render('index-external', {
+          username: session.username,
+          title: 'Accout management',
+          message,
+        });
+      } else {
+        res.render('index', {
+          username: session.username,
+          title: 'Accout management',
+          message,
+        });
+      }
+    }).catch((e) => {
+      console.error(e);
+      res.redirect('/login');
     });
   });
 
@@ -56,9 +70,18 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       res.redirect('/login');
       return;
     }
-    res.render('email-aliases', {
-      username: session.username,
-      title: 'Email aliases',
+    userIsInternal(session.username).then((isInternal) => {
+      if (!isInternal) {
+        res.redirect('/');
+        return;
+      }
+      res.render('email-aliases', {
+        username: session.username,
+        title: 'Email aliases',
+      });
+    }).catch((e) => {
+      console.error(e);
+      res.redirect('/');
     });
   });
 
@@ -122,9 +145,18 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       res.redirect('/login');
       return;
     }
-    res.render('list/lists', {
-      username: session.username,
-      title: 'Mailing lists',
+    userIsInternal(session.username).then((isInternal) => {
+      if (!isInternal) {
+        res.redirect('/');
+        return;
+      }
+      res.render('list/lists', {
+        username: session.username,
+        title: 'Mailing lists',
+      });
+    }).catch((e) => {
+      console.error(e);
+      res.redirect('/');
     });
   });
 
@@ -135,10 +167,19 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       return;
     }
     const listName = req.query.list;
-    res.render('list/details', {
-      username: session.username,
-      title: 'Mailing list',
-      listName,
+    userIsInternal(session.username).then((isInternal) => {
+      if (!isInternal) {
+        res.redirect('/');
+        return;
+      }
+      res.render('list/list', {
+        username: session.username,
+        title: 'Mailing list',
+        listName,
+      });
+    }).catch((e) => {
+      console.error(e);
+      res.redirect('/');
     });
   });
 
@@ -151,11 +192,15 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       return;
     }
     const username = req.session.username;
-    userInGroup(username, ADMIN_GROUP).then((isAdmin) => {
+    getGroups(username).then((groups) => {
+      const isInternal = groups.includes(INTERNAL_GROUP);
+      const isAdmin = isInternal && groups.includes(ADMIN_GROUP);
       res.json({
         logged_in: true,
         username,
+        is_internal: isInternal,
         is_admin: isAdmin,
+        groups,
       });
     }).catch((e) => {
       console.error(e);
@@ -163,7 +208,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
         logged_in: false,
         username: null,
       });
-    })
+    });
   });
 
   app.post('/change-password', urlencodedParser, async (req, res) => {
@@ -300,7 +345,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
 
   app.post('/add-alias', urlencodedParser, async (req, res) => {
     try {
-      if (!req.session.username) {
+      if (!req.session.username || !await userIsInternal(req.session.username)) {
         res.status(401).json({
           error: 'unauthorized',
         });
@@ -339,7 +384,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
 
   app.post('/remove-alias', urlencodedParser, async (req, res) => {
     try {
-      if (!req.session.username) {
+      if (!req.session.username || !await userIsInternal(req.session.username)) {
         res.status(401).json({
           error: 'unauthorized',
         });
@@ -366,7 +411,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
 
   app.get('/get-aliases', async (req, res) => {
     try {
-      if (!req.session.username) {
+      if (!req.session.username || !await userIsInternal(req.session.username)) {
         res.status(401).json({
           error: 'unauthorized',
         });
@@ -455,7 +500,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
 
   app.get('/get-lists', async (req, res) => {
     try {
-      if (!req.session.username) {
+      if (!req.session.username || !await userIsInternal(req.session.username)) {
         res.status(401).json({
           error: 'unauthorized',
         });
@@ -478,7 +523,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
 
   app.get('/get-list-members', urlencodedParser, async (req, res) => {
     try {
-      if (!req.session.username) {
+      if (!req.session.username || !await userIsInternal(req.session.username)) {
         res.status(401).json({
           error: 'unauthorized',
         });

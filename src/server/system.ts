@@ -18,8 +18,9 @@
 */
 
 import { execFile } from 'node:child_process';
-import { ADMIN_GROUP } from '../defs.js';
+import { ADMIN_GROUP, INTERNAL_GROUP } from '../defs.js';
 import { sendMessage } from './child-channel.js';
+import { getGroups } from '../lib/unix-users.js';
 
 export const userExists = async (username: string) => {
   return new Promise<boolean>((resolve, reject) => {
@@ -34,37 +35,30 @@ export const userExists = async (username: string) => {
 };
 
 export const userInGroup = async (username: string, group: string) => {
-  return new Promise<boolean>((resolve, reject) => {
-    execFile('id', [username], (error, stdout) => {
-      if (error) {
-        resolve(false);
-        return;
-      }
-      const output = stdout.trim();
-      const groupsMatches = output.match(/groups=([0-9]+\(.*?\)(?:,[0-9]+\(.*?\))*)/);
-      const groups: string[] = [];
-      if (groupsMatches && groupsMatches[1]) {
-        const groupStrings = groupsMatches[1].split(',');
-        for (const groupString of groupStrings) {
-          const matches = groupString.match(/([0-9]+)\((.*?)\)/);
-          if (!matches) {
-            continue;
-          }
-          const groupName = matches[2] as string;
-          groups.push(groupName);
-        }
-      }
-      resolve(groups.includes(group));
-    });
-  });
+  const groups = await getGroups(username);
+  return groups.includes(group);
+};
+
+export const userInAllGroups = async (username: string, groups: string[]) => {
+  const userGroups = await getGroups(username);
+  for (const group of groups) {
+    if (!userGroups.includes(group)) {
+      return false;
+    }
+  }
+  return true;
 };
 
 export const validateAliasName = (aliasName: string) => {
   return !!aliasName.match(/^[a-z][a-z0-9.-]{0,31}$/);
 };
 
+export const userIsInternal = async (username: string) => {
+  return userInGroup(username, INTERNAL_GROUP);
+};
+
 export const userIsAdmin = async (username: string) => {
-  return userInGroup(username, ADMIN_GROUP);
+  return userInAllGroups(username, [ADMIN_GROUP, INTERNAL_GROUP]);
 };
 
 export const getAliases = async (): Promise<string> => {
