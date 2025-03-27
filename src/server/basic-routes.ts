@@ -278,6 +278,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       };
       const passwordId = req.session.passwordFieldName;
       if (!passwordId) {
+        console.log('invalid login id');
         res.redirect('/login?error=auth-error');
         return;
       }
@@ -290,11 +291,13 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       const answer1 = req.session.quizAnswer1;
       const answer2 = req.session.quizAnswer2;
       if (!token || token != loginToken || !answer1 || !answer2 || !answersStr) {
+        console.log('Invalid answer');
         recordLoginFailure();
         res.redirect('/login?error=auth-error');
         return;
       }
       if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
+        console.log('login disabled');
         recordLoginFailure();
         res.redirect('/login?error=too-many-failures');
         return;
@@ -302,6 +305,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       const realAnswers = [answer1, answer2].sort() as [string, string];
       const answers = answersStr.split(',').sort() as [string, string];
       if (dummyPassword || answers[0] != realAnswers[0] || answers[1] != realAnswers[1]) {
+        console.log('invalid answer');
         recordLoginFailure();
         res.redirect('/login?error=auth-error');
         return;
@@ -335,6 +339,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
 
       }).catch((e) => {
         recordLoginFailure();
+        console.log('pam auth failed');
         res.redirect('/login?error=auth-error');
         return;
       });
