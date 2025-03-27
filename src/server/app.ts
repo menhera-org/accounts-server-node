@@ -34,7 +34,7 @@ export const createApp = async (): Promise<Express> => {
     collectionName: 'express-sessions',
   });
   const app = express();
-  app.set('trust proxy', 'loopback');
+  app.set('trust proxy', ['loopback', 'uniquelocal']);
   app.set('view engine', 'ejs');
   app.use(helmet({
     contentSecurityPolicy: {
