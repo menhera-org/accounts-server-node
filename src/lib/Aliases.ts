@@ -187,6 +187,11 @@ export class Aliases {
     return alias in this.aliases;
   }
 
+  public getForwardings(alias: string): string[] {
+    const users = this.aliases[alias] ?? [];
+    return users;
+  }
+
   public toString() {
     this.encode();
     return this.contents;

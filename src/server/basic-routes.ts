@@ -438,6 +438,40 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     }
   });
 
+  app.get('/api/v1/username/get', async (req, res) => {
+    try {
+      const username = req.query.username as string;
+      if (!username || 'string' != typeof username) {
+        throw void 0;
+      }
+      const aliasesStr = await getAliases();
+      const aliases = new Aliases(aliasesStr);
+      let found = '';
+      let forward: string[] = [];
+      if (await userExists(username)) {
+        found = 'user';
+      }
+      if (aliases.aliasExists(username)) {
+        found = 'alias';
+        forward = aliases.getForwardings(username);
+      }
+      if (!found) {
+        throw void 0;
+      }
+      res.json({
+        error: null,
+        username,
+        type: found,
+        members: forward,
+      });
+    } catch (e) {
+      res.status(404).json({
+        error: 'not-found',
+      });
+      return;
+    }
+  });
+
   app.post('/create-list', urlencodedParser, async (req, res) => {
     try {
       if (!req.session.username) {
