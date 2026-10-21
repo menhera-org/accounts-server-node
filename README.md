@@ -57,6 +57,17 @@ Sizes are configured in bits (even numbers):
 
 Each solved puzzle is valid for a single password attempt.
 
+## Reverse proxy
+
+The server expects to sit behind a TLS-terminating reverse proxy (Nginx). The
+proxy must send `X-Forwarded-Proto` (the session cookie is `Secure` and the
+OIDC provider derives its URLs from it) and the client address as `X-Real-IP`
+or `X-Forwarded-For`. Those headers are honoured only from the addresses listed
+in `TRUSTED_PROXIES` (default `loopback,uniquelocal`: the local host and
+private RFC 1918 / ULA addresses). When the proxy runs on another host with a
+public or global address, list that address or subnet, for example
+`TRUSTED_PROXIES=loopback,2001:db8:10::5`.
+
 ## Dependency policy
 
 `.npmrc` sets `min-release-age=21`: npm releases that support the setting

@@ -22,7 +22,7 @@ import session from 'express-session';
 import express, { Express } from 'express';
 import { setNoCache, setAllowCache, setIsolation } from './middlewares.js';
 import { ASSETS_DIR } from '../base-path.js';
-import { SECRET, SESSION_MAX_AGE } from '../defs.js';
+import { SECRET, SESSION_MAX_AGE, TRUSTED_PROXIES } from '../defs.js';
 import { connect, getNativeClient } from './db.js';
 import MongoStore from 'connect-mongo';
 
@@ -34,7 +34,7 @@ export const createApp = async (): Promise<Express> => {
     collectionName: 'express-sessions',
   });
   const app = express();
-  app.set('trust proxy', ['loopback', 'uniquelocal']);
+  app.set('trust proxy', TRUSTED_PROXIES);
   app.set('view engine', 'ejs');
   app.use(helmet({
     contentSecurityPolicy: {

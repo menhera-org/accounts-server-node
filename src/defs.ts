@@ -17,6 +17,8 @@
   @license
 */
 
+import { parseTrustedProxies } from './lib/trusted-proxies.js';
+
 export const ADMIN_GROUP = process.env.ADMIN_GROUP || 'sudo';
 export const INTERNAL_GROUP = process.env.INTERNAL_GROUP || 'internal';
 export const ALIASES_PATH = process.env.ALIASES_PATH || '/etc/aliases';
@@ -27,6 +29,11 @@ export const SERVER_USER = process.env.SERVER_USER || 'nobody';
 export const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/accounts';
 
 export const SESSION_MAX_AGE = 1000 * 60 * 60 * 24; // 1 day
+
+// Reverse proxies whose X-Forwarded-Proto / X-Forwarded-For / X-Real-IP headers are trusted
+// (Express "trust proxy" syntax). The proxy runs on another host in production, so list its
+// address or subnet here when it is not a loopback or private (RFC 1918 / ULA) address.
+export const TRUSTED_PROXIES = parseTrustedProxies(process.env.TRUSTED_PROXIES || 'loopback,uniquelocal');
 
 // Login proof-of-work: the browser factors a balanced RSA-style semiprime of LOGIN_QUIZ_BITS bits.
 // Every failed login attempt in a session raises the size by LOGIN_QUIZ_STEP_BITS, up to
