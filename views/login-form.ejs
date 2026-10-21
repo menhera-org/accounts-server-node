@@ -1,4 +1,4 @@
-<p id="login-form-status">Please wait...</p>
+<p id="login-form-status"><progress id="login-form-progress" max="1"></progress></p>
 <%
 const genId = () => Math.random().toString(16).slice(2, 10);
 const FORM_INPUT_USERNAME_ID = 'login-form-' + genId();

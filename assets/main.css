@@ -86,6 +86,13 @@ button[type="submit"]:active {
   background-color: #195168;
 }
 
+#login-form-progress {
+  display: block;
+  min-inline-size: 0;
+  inline-size: 100%;
+  box-sizing: border-box;
+}
+
 .login-form-inputs:not([hidden]) {
   display: grid;
   grid-template-columns: max-content 1fr;

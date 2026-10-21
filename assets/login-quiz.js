@@ -11,16 +11,19 @@ const factor = async (n, report) => {
   return primes.map((prime) => prime.toString());
 };
 
-const describeProgress = (status) => {
-  switch (status.phase) {
-    case 'boot':
-      return `Preparing the login puzzle (${status.workers} workers)…`;
-    case 'sieving':
-      return `Solving the ${status.bits}-bit login puzzle: ${status.relations}/${status.target} relations, ${Math.round(status.elapsedSeconds)}s elapsed…`;
-    case 'linalg':
-      return 'Almost done…';
-    default:
-      return 'Solving the login puzzle…';
+// Progress bar: indeterminate until sieving starts, then filled by the sieve progress.
+// Accepted relations grow roughly like time^1.6, so the ratio is mapped back to
+// elapsed time for a bar that advances evenly instead of crawling and then jumping.
+const showProgress = (progressBar, status) => {
+  if (!progressBar) {
+    return;
+  }
+  if (status.phase === 'sieving' && status.target > 0) {
+    progressBar.value = Math.min(1, Math.pow(status.relations / status.target, 1 / 1.6));
+  } else if (status.phase === 'linalg') {
+    progressBar.value = 1;
+  } else {
+    progressBar.removeAttribute('value');
   }
 };
 
@@ -91,6 +94,7 @@ const loginFormInputsPrototype = loginFormForm.querySelector('.login-form-inputs
 const loginFormPlaceholder = document.querySelector('#login-form-placeholder');
 
 const loginFormStatus = document.querySelector('#login-form-status');
+const loginFormProgress = document.querySelector('#login-form-progress');
 const inputQuiz = loginFormInputsPrototype.querySelector('input[name="quizFactorization"]');
 const inputPasswordId = loginFormInputsPrototype.querySelector('input[name="passwordId"]');
 const inputQuizValue = inputQuiz?.value;
@@ -102,7 +106,7 @@ if (!inputQuizValue) {
 } else {
   const n = inputQuizValue;
   factor(n, (status) => {
-    loginFormStatus.textContent = describeProgress(status);
+    showProgress(loginFormProgress, status);
   }).then((factors) => {
     loginFormInputsPrototype.remove();
     const loginFormInputs = createFormInputs(factors.join(','), passwordId);
