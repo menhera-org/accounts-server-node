@@ -85,7 +85,7 @@ export const getConfiguration = async (serverConfig: ServerConfiguration): Promi
       return undefined;
     },
     pkce: {
-      methods: ["S256"],
+      // oidc-provider 9 would otherwise require PKCE for public clients.
       required: () => false,
     },
     claims: {

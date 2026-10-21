@@ -115,7 +115,7 @@ export class MongoDbAdapter {
         key: id,
         "payload.kind": this.model,
       },
-      { consumed: Date.now() / 1000 }
+      { $set: { "payload.consumed": Math.floor(Date.now() / 1000) } }
     );
   }
 
@@ -147,7 +147,11 @@ export class MongoDbAdapter {
    *
    */
   async revokeByGrantId(grantId: string): Promise<any> {
+    // Scoped to this model like the reference adapters: oidc-provider calls this on
+    // every token model when a grant is revoked. An unscoped delete also removed
+    // Interaction documents (they carry grantId), breaking in-flight logins.
     return BaseModel.deleteMany({
+      "payload.kind": this.model,
       "payload.grantId": grantId,
     });
   }

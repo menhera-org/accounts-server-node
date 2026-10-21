@@ -1,5 +1,6 @@
 <%- include('header'); %>
 <h1>Log in to <%= clientId %></h1>
+<p>You will be signed in to <%= clientId %> as <strong><%= username %></strong>.</p>
 <p id="error"></p>
 <form id="consent_form" action="/interaction/<%= uid %>/confirm" method="POST">
   <p><button type="submit">Continue</button></p>

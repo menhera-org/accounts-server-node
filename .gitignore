@@ -132,3 +132,10 @@ dist
 jwks.json
 clients.json
 cookies-keys.json
+
+# Compiled PAM helper (scripts/build-pam-auth.js)
+build/
+
+/.claude
+/.agents
+/.codex

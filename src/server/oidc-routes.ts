@@ -23,14 +23,27 @@ import Provider, { InteractionResults } from "oidc-provider";
 import { UserError } from "../lib/UserError.js";
 import { ServerConfiguration } from "../lib/ServerConfiguration.js";
 import { getGroups } from "../lib/unix-users.js";
-
-const INTERNAL_GROUP = process.env.INTERNAL_GROUP || 'internal';
+import { INTERNAL_GROUP } from "../defs.js";
 
 const getInteraction = async (provider: Provider, req: Request, res: Response) => {
   try {
     return await provider.interactionDetails(req, res);
   } catch (e) {
     return null;
+  }
+};
+
+/**
+ * Clients listed in restricted-clients.json may only be used by internal users.
+ * Throws a UserError otherwise.
+ */
+const assertClientAllowed = async (serverConfig: ServerConfiguration, clientId: string, accountId: string): Promise<void> => {
+  if (!serverConfig.restrictedClientIds.includes(clientId)) {
+    return;
+  }
+  const userGroups = await getGroups(accountId);
+  if (!userGroups.includes(INTERNAL_GROUP)) {
+    throw new UserError('Unauthorized access');
   }
 };
 
@@ -42,36 +55,39 @@ export const defineOidcRoutes = (app: Express, provider: Provider, serverConfig:
         next(new UserError('interaction session not found'));
         return;
       }
-      const { uid, prompt: { name, details: promptDetails }, params } = details;
+      const { uid, prompt: { name }, params } = details;
+      const clientId = String(params.client_id ?? '');
+
       if (name == 'login') {
-        if (req.session.username) {
-          const result = {
-            login: {
-              accountId: req.session.username,
-            },
-          };
-          await provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
-          return;
-        }
-        req.session.loginReturnTo = `/interaction/${uid}/login`;
-        res.redirect('/login');
-        return;
-      } else if (name == 'consent') {
-        if (!req.session.username) {
-          req.session.loginReturnTo = `/interaction/${uid}/consent`;
+        const username = req.session.username;
+        if (!username) {
+          // Come back here once the user has logged in to this application.
+          req.session.loginReturnTo = `/interaction/${uid}`;
           res.redirect('/login');
           return;
         }
-        const clientId = params.client_id as string;
-        if (serverConfig.restrictedClientIds.includes(clientId)) {
-          const userGroups = await getGroups(req.session.username);
-          if (!userGroups.includes(INTERNAL_GROUP)) {
-            next(new UserError('Unauthorized access'));
-            return;
-          }
+        await assertClientAllowed(serverConfig, clientId, username);
+        const result: InteractionResults = {
+          login: {
+            accountId: username,
+          },
+        };
+        await provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+        return;
+      }
+
+      if (name == 'consent') {
+        // Consent is only ever requested for an authenticated SSO session, and
+        // the tokens will be issued for that session's account.
+        const accountId = details.session?.accountId;
+        if (!accountId) {
+          next(new UserError('invalid interaction'));
+          return;
         }
+        await assertClientAllowed(serverConfig, clientId, accountId);
         res.render('interaction-consent', {
           title: `Log in to ${clientId}`,
+          username: accountId,
           clientId,
           uid,
         });
@@ -84,51 +100,46 @@ export const defineOidcRoutes = (app: Express, provider: Provider, serverConfig:
     }
   });
 
-  app.get('/interaction/:uid/login', urlencodedParser, async (req, res, next) => {
-    try {
-      if (req.session.username) {
-        const result = {
-          login: {
-            accountId: req.session.username,
-          },
-        };
-        await provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
-        return;
-      }
-
-      const result = {
-        error: 'not_authenticated',
-        error_description: 'Invalid request',
-      };
-      await provider.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
-      return;
-    } catch (e) {
-      next(e);
-    }
+  // Sessions created before this route was retired may still return here after a login.
+  app.get('/interaction/:uid/login', (req, res) => {
+    res.redirect(`/interaction/${encodeURIComponent(req.params.uid)}`);
   });
 
   app.post('/interaction/:uid/confirm', urlencodedParser, async (req, res, next) => {
     try {
-      const interactionDetails = await provider.interactionDetails(req, res);
-      const { prompt: { name, details: promptDetails } } = interactionDetails;
+      const details = await getInteraction(provider, req, res);
+      if (!details) {
+        next(new UserError('interaction session not found'));
+        return;
+      }
+      const { prompt: { name, details: promptDetails }, params } = details;
       if ('consent' !== name) {
         next(new UserError('invalid interaction'));
         return;
       }
+      const accountId = details.session?.accountId;
+      if (!accountId) {
+        next(new UserError('invalid interaction'));
+        return;
+      }
+      const clientId = String(params.client_id ?? '');
+      await assertClientAllowed(serverConfig, clientId, accountId);
 
-      let { grantId } = interactionDetails;
+      let { grantId } = details;
       let grant;
       if (grantId) {
+        // modifying an existing grant in an existing session
         grant = await provider.Grant.find(grantId);
       } else {
+        // establishing a new grant
         grant = new provider.Grant({
-          accountId: req.session.username,
-          clientId: interactionDetails.params.client_id as string,
+          accountId,
+          clientId,
         });
       }
 
       if (!grant) {
-        next(new Error('invalid interaction'));
+        next(new UserError('invalid interaction'));
         return;
       }
 
@@ -149,7 +160,7 @@ export const defineOidcRoutes = (app: Express, provider: Provider, serverConfig:
       grantId = await grant.save();
 
       const result: InteractionResults = { consent: {} };
-      if (!interactionDetails.grantId) {
+      if (!details.grantId) {
         result.consent!.grantId = grantId;
       }
 

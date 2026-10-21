@@ -18,7 +18,7 @@
 */
 
 import * as crypto from 'node:crypto';
-import { Express, Request, Response } from 'express';
+import { Express } from 'express';
 import { pamAuthenticatePromise } from './pam-auth-client.js';
 import { Aliases } from '../lib/Aliases.js';
 import { urlencodedParser } from './middlewares.js';
@@ -29,14 +29,11 @@ import Provider from 'oidc-provider';
 import { generatePrimeQuiz } from './auth-quiz-factorization.js';
 import { generateQuiz } from './auth-quiz.js';
 import { getGroups } from '../lib/unix-users.js';
+import { destroyProviderSession, getProviderSession } from './oidc/session.js';
 
 const staticDir = STATIC_DIR;
 
 export const defineRoutes = async (app: Express, provider: Provider) => {
-  const getContext = (req: Request, res: Response) => {
-    return provider.app.createContext(req, res);
-  };
-
   app.get('/', urlencodedParser, (req, res) => {
     const session = req.session;
     if (!session.username) {
@@ -112,7 +109,14 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     });
   });
 
-  app.get('/logout', (req, res) => {
+  app.get('/logout', async (req, res) => {
+    // Also end the SSO (oidc-provider) session; otherwise relying parties keep
+    // signing the user in without a password after they logged out here.
+    try {
+      await destroyProviderSession(provider, req, res);
+    } catch (e) {
+      console.error('failed to end the SSO session', e);
+    }
     req.session.destroy((err) => {
       if (err) {
         console.error(err);
@@ -172,7 +176,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
         res.redirect('/');
         return;
       }
-      res.render('list/list', {
+      res.render('list/details', {
         username: session.username,
         title: 'Mailing list',
         listName,
@@ -313,7 +317,26 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       pamAuthenticatePromise({
         username,
         password,
-      }).then(() => {
+      }).then(() => true, () => false).then(async (authenticated) => {
+        if (!authenticated) {
+          recordLoginFailure();
+          console.log('pam auth failed');
+          res.redirect('/login?error=auth-error');
+          return;
+        }
+
+        // Keep the SSO (oidc-provider) session consistent with this login: an SSO
+        // session left behind by another account would otherwise keep signing that
+        // account in to relying parties. When returning to an OIDC interaction the
+        // provider itself handles the account change, and the interaction must not
+        // lose its session.
+        if (!loginReturnTo.startsWith('/interaction/')) {
+          const ssoSession = await getProviderSession(provider, req, res);
+          if (ssoSession.accountId && ssoSession.accountId !== username) {
+            await destroyProviderSession(provider, req, res);
+          }
+        }
+
         req.session.regenerate(function (err) {
           if (err) {
             console.error(err);
@@ -336,13 +359,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
             res.redirect(loginReturnTo);
           });
         });
-
-      }).catch((e) => {
-        recordLoginFailure();
-        console.log('pam auth failed');
-        res.redirect('/login?error=auth-error');
-        return;
-      });
+      }).catch(next);
     } catch (e) {
       next(e);
     }
