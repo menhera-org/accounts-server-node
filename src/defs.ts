@@ -28,6 +28,32 @@ export const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017
 
 export const SESSION_MAX_AGE = 1000 * 60 * 60 * 24; // 1 day
 
+// Login proof-of-work: the browser factors a balanced RSA-style semiprime of LOGIN_QUIZ_BITS bits.
+// Every failed login attempt in a session raises the size by LOGIN_QUIZ_STEP_BITS, up to
+// LOGIN_QUIZ_MAX_BITS (240 -> 256 -> 272 -> 288 by default).
+const parseQuizBits = (name: string, fallback: number, minimum: number): number => {
+  const raw = (process.env[name] ?? '').trim();
+  const value = raw === '' ? fallback : Number(raw);
+  if (!Number.isInteger(value) || value < minimum || value > 400 || value % 2 !== 0) {
+    throw new Error(`${name} must be an even integer between ${minimum} and 400`);
+  }
+  return value;
+};
+export const LOGIN_QUIZ_BITS = parseQuizBits('LOGIN_QUIZ_BITS', 240, 64);
+export const LOGIN_QUIZ_STEP_BITS = parseQuizBits('LOGIN_QUIZ_STEP_BITS', 16, 0);
+export const LOGIN_QUIZ_MAX_BITS = parseQuizBits('LOGIN_QUIZ_MAX_BITS', 288, 64);
+if (LOGIN_QUIZ_MAX_BITS < LOGIN_QUIZ_BITS) {
+  throw new Error('LOGIN_QUIZ_MAX_BITS must not be smaller than LOGIN_QUIZ_BITS');
+}
+
+// Failed login attempts are also counted per client address (IPv4 /32, IPv6 /64), so that a
+// fresh session does not reset the puzzle size. A bucket's count expires this long after its
+// last failure.
+export const LOGIN_FAILURE_WINDOW_SECONDS = parseInt(process.env.LOGIN_FAILURE_WINDOW_SECONDS || '3600', 10);
+if (!Number.isInteger(LOGIN_FAILURE_WINDOW_SECONDS) || LOGIN_FAILURE_WINDOW_SECONDS < 1) {
+  throw new Error('LOGIN_FAILURE_WINDOW_SECONDS must be a positive integer');
+}
+
 export const PORT = parseInt(process.env.PORT || '3000', 10);
 const SECRET = (process.env.SECRET ?? '').trim();
 if (!SECRET) {

@@ -32,6 +32,31 @@ rather than a Node.js addon, it does not depend on the Node.js ABI, N-API,
 node-gyp or node-pre-gyp, so upgrading Node.js cannot break the PAM layer.
 The PAM service name comes from `PAM_SERVICE_NAME` (default `login`).
 
+## Login proof-of-work
+
+Before a password is accepted, the browser must factor a balanced RSA-style
+semiprime issued by the server (`src/server/auth-quiz-factorization.ts`). The
+factorization runs in the browser with [rusqsieve](https://github.com/metastable-void/rusqsieve),
+a quadratic sieve compiled to WebAssembly, vendored under
+`assets/factorization/rusqsieve/` by `scripts/vendor-rusqsieve.sh` (the release
+tarball is checksum-verified; see `VENDORED.md` there). `factorize.js` drives
+rusqsieve's coordinator and sieve workers from the login page.
+
+Sizes are configured in bits (even numbers):
+
+- `LOGIN_QUIZ_BITS` (default 240): size of the first puzzle.
+- `LOGIN_QUIZ_STEP_BITS` (default 16) and `LOGIN_QUIZ_MAX_BITS` (default 288):
+  every failed login attempt raises the next puzzle by one step, up to the
+  maximum, so the default escalation is 240, 256, 272, 288 bits.
+- Failures are counted per session and per client address bucket (IPv4 host,
+  IPv6 /64) in MongoDB; a bucket's count expires `LOGIN_FAILURE_WINDOW_SECONDS`
+  (default 3600) after its last failure. The client address is taken from the
+  `X-Real-IP` header when the connection comes from a trusted proxy (the
+  `trust proxy` setting: loopback and unique-local addresses), otherwise from
+  `req.ip`.
+
+Each solved puzzle is valid for a single password attempt.
+
 ## Dependency policy
 
 `.npmrc` sets `min-release-age=21`: npm releases that support the setting

@@ -26,10 +26,12 @@ import { STATIC_DIR } from '../base-path.js';
 import { userExists, userInGroup, validateAliasName, getAliases, updateAliases, userIsAdmin, callChangePassword, userIsInternal } from './system.js';
 import { ADMIN_GROUP, ALL_LISTS_USER, INTERNAL_GROUP } from '../defs.js';
 import Provider from 'oidc-provider';
-import { generatePrimeQuiz } from './auth-quiz-factorization.js';
-import { generateQuiz } from './auth-quiz.js';
+import { generatePrimeQuiz, quizBitsForLevel } from './auth-quiz-factorization.js';
 import { getGroups } from '../lib/unix-users.js';
 import { destroyProviderSession, getProviderSession } from './oidc/session.js';
+import { ipBucket } from '../lib/ip-bucket.js';
+import { getClientAddress } from './client-address.js';
+import { getLoginFailureCount, recordLoginFailure as recordBucketLoginFailure } from './login-failures.js';
 
 const staticDir = STATIC_DIR;
 
@@ -82,31 +84,47 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     });
   });
 
-  app.get('/login', urlencodedParser, (req, res) => {
-    if (req.session.username) {
-      res.redirect('/');
-      return;
+  app.get('/login', urlencodedParser, async (req, res, next) => {
+    try {
+      if (req.session.username) {
+        res.redirect('/');
+        return;
+      }
+      const loginToken = crypto.randomUUID();
+      // Repeated failures, in this session or from this client's address bucket,
+      // make the login puzzle bigger (see quizBitsForLevel).
+      const bucket = ipBucket(getClientAddress(req));
+      let bucketFailures = 0;
+      if (bucket) {
+        try {
+          bucketFailures = await getLoginFailureCount(bucket);
+        } catch (e) {
+          console.error('failed to read the login failure count', e);
+        }
+      }
+      const level = Math.max(req.session.quizLevel ?? 0, bucketFailures);
+      const quiz = generatePrimeQuiz(quizBitsForLevel(level));
+      const {p, q, n} = quiz;
+      const answer1 = p;
+      const answer2 = q;
+      req.session.loginToken = loginToken;
+      req.session.quizAnswer1 = answer1;
+      req.session.quizAnswer2 = answer2;
+      const passwordId = `password-${crypto.randomUUID()}`;
+      req.session.passwordFieldName = passwordId;
+      const message = req.query.message ?? '';
+      const error = req.query.error ?? '';
+      res.render('login', {
+        title: 'Log in',
+        loginToken: loginToken,
+        passwordId,
+        message,
+        error,
+        quizFactorization: n,
+      });
+    } catch (e) {
+      next(e);
     }
-    const loginToken = crypto.randomUUID();
-    const quiz = generatePrimeQuiz();
-    const {p, q, n} = quiz;
-    const answer1 = p;
-    const answer2 = q;
-    req.session.loginToken = loginToken;
-    req.session.quizAnswer1 = answer1;
-    req.session.quizAnswer2 = answer2;
-    const passwordId = `password-${crypto.randomUUID()}`;
-    req.session.passwordFieldName = passwordId;
-    const message = req.query.message ?? '';
-    const error = req.query.error ?? '';
-    res.render('login', {
-      title: 'Log in',
-      loginToken: loginToken,
-      passwordId,
-      message,
-      error,
-      quizFactorization: n,
-    });
   });
 
   app.get('/logout', async (req, res) => {
@@ -252,7 +270,7 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
     }
   });
 
-  app.post('/auth', urlencodedParser, (req, res, next) => {
+  app.post('/auth', urlencodedParser, async (req, res, next) => {
     try {
       const loginReturnTo = req.session.loginReturnTo || '/';
       if (!loginReturnTo.startsWith('/') || loginReturnTo.startsWith('//')) {
@@ -264,7 +282,18 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
         res.redirect(loginReturnTo);
         return;
       }
-      const recordLoginFailure = () => {
+      const bucket = ipBucket(getClientAddress(req));
+      const recordLoginFailure = async () => {
+        // Every failure raises the size of the next login puzzle, for this session and
+        // for the client's address bucket (so that a new session does not reset it).
+        req.session.quizLevel = (req.session.quizLevel ?? 0) + 1;
+        if (bucket) {
+          try {
+            await recordBucketLoginFailure(bucket);
+          } catch (e) {
+            console.error('failed to record the login failure', e);
+          }
+        }
         if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
           req.session.loginDisabledUntil = Date.now() + 600 * 1000;
           return;
@@ -282,27 +311,29 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       };
       const passwordId = req.session.passwordFieldName;
       if (!passwordId) {
+        // No puzzle was issued to this session (or it was already used): counts as a failure.
         console.log('invalid login id');
+        await recordLoginFailure();
         res.redirect('/login?error=auth-error');
         return;
       }
       const username = req.body.username;
       const password = req.body[passwordId];
       const dummyPassword = req.body.password;
-      const answersStr = req.body.quizFactorizationAnswer as string;
+      const answersStr = req.body.quizFactorizationAnswer;
       const token = req.body.token;
       const loginToken = req.session.loginToken;
       const answer1 = req.session.quizAnswer1;
       const answer2 = req.session.quizAnswer2;
-      if (!token || token != loginToken || !answer1 || !answer2 || !answersStr) {
+      if (!token || token != loginToken || !answer1 || !answer2 || 'string' != typeof answersStr || !answersStr) {
         console.log('Invalid answer');
-        recordLoginFailure();
+        await recordLoginFailure();
         res.redirect('/login?error=auth-error');
         return;
       }
       if (req.session.loginDisabledUntil && req.session.loginDisabledUntil > Date.now()) {
         console.log('login disabled');
-        recordLoginFailure();
+        await recordLoginFailure();
         res.redirect('/login?error=too-many-failures');
         return;
       }
@@ -310,56 +341,67 @@ export const defineRoutes = async (app: Express, provider: Provider) => {
       const answers = answersStr.split(',').sort() as [string, string];
       if (dummyPassword || answers[0] != realAnswers[0] || answers[1] != realAnswers[1]) {
         console.log('invalid answer');
-        recordLoginFailure();
+        await recordLoginFailure();
         res.redirect('/login?error=auth-error');
         return;
       }
-      pamAuthenticatePromise({
-        username,
-        password,
-      }).then(() => true, () => false).then(async (authenticated) => {
-        if (!authenticated) {
-          recordLoginFailure();
-          console.log('pam auth failed');
-          res.redirect('/login?error=auth-error');
+      // A solved puzzle pays for exactly one password attempt: the next attempt needs a new one.
+      req.session.loginToken = '';
+      req.session.quizAnswer1 = '';
+      req.session.quizAnswer2 = '';
+      req.session.passwordFieldName = '';
+
+      let authenticated = false;
+      try {
+        await pamAuthenticatePromise({
+          username,
+          password,
+        });
+        authenticated = true;
+      } catch (e) {
+        // PAM rejected the credentials (or the helper failed); handled below.
+      }
+      if (!authenticated) {
+        await recordLoginFailure();
+        console.log('pam auth failed');
+        res.redirect('/login?error=auth-error');
+        return;
+      }
+
+      // Keep the SSO (oidc-provider) session consistent with this login: an SSO
+      // session left behind by another account would otherwise keep signing that
+      // account in to relying parties. When returning to an OIDC interaction the
+      // provider itself handles the account change, and the interaction must not
+      // lose its session.
+      if (!loginReturnTo.startsWith('/interaction/')) {
+        const ssoSession = await getProviderSession(provider, req, res);
+        if (ssoSession.accountId && ssoSession.accountId !== username) {
+          await destroyProviderSession(provider, req, res);
+        }
+      }
+
+      req.session.regenerate(function (err) {
+        if (err) {
+          console.error(err);
+          res.redirect('/login?error=internal-error');
           return;
         }
 
-        // Keep the SSO (oidc-provider) session consistent with this login: an SSO
-        // session left behind by another account would otherwise keep signing that
-        // account in to relying parties. When returning to an OIDC interaction the
-        // provider itself handles the account change, and the interaction must not
-        // lose its session.
-        if (!loginReturnTo.startsWith('/interaction/')) {
-          const ssoSession = await getProviderSession(provider, req, res);
-          if (ssoSession.accountId && ssoSession.accountId !== username) {
-            await destroyProviderSession(provider, req, res);
-          }
-        }
+        req.session.username = username;
 
-        req.session.regenerate(function (err) {
+        // save the session before redirection to ensure page
+        // load does not happen before session is saved
+        req.session.save(function (err) {
           if (err) {
             console.error(err);
             res.redirect('/login?error=internal-error');
             return;
           }
 
-          req.session.username = username;
-
-          // save the session before redirection to ensure page
-          // load does not happen before session is saved
-          req.session.save(function (err) {
-            if (err) {
-              console.error(err);
-              res.redirect('/login?error=internal-error');
-              return;
-            }
-
-            req.session.loginReturnTo = '';
-            res.redirect(loginReturnTo);
-          });
+          req.session.loginReturnTo = '';
+          res.redirect(loginReturnTo);
         });
-      }).catch(next);
+      });
     } catch (e) {
       next(e);
     }

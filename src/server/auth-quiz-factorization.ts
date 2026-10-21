@@ -18,53 +18,51 @@
 */
 
 import * as crypto from 'node:crypto';
-import { isPrime } from '../lib/bigint-primarity.js';
+import { LOGIN_QUIZ_BITS, LOGIN_QUIZ_MAX_BITS, LOGIN_QUIZ_STEP_BITS } from '../defs.js';
 
 export interface FactorizationQuiz {
   p: string;
   q: string;
   n: string;
+  bits: number;
 }
 
-const PRIME_BITS = 48;
+/**
+ * Size of the login puzzle for a session that has already failed `level` login attempts:
+ * the base size, raised by one step per failure, capped at the maximum.
+ */
+export const quizBitsForLevel = (level: number): number => {
+  const failures = Number.isFinite(level) && level > 0 ? Math.floor(level) : 0;
+  return Math.min(LOGIN_QUIZ_MAX_BITS, LOGIN_QUIZ_BITS + LOGIN_QUIZ_STEP_BITS * failures);
+};
 
-const getBitLength = (n: bigint): number => {
-  let i = 0;
-  while (n != 0n) {
-    n >>= 1n;
-    i++;
+/**
+ * Generates a balanced RSA-style semiprime n = p * q of exactly `bits` bits, with p and q
+ * distinct primes of `bits / 2` bits each. The browser factors n with the quadratic sieve
+ * (see assets/factorization/rusqsieve/) as the login proof-of-work.
+ */
+export const generatePrimeQuiz = (bits: number = LOGIN_QUIZ_BITS): FactorizationQuiz => {
+  if (!Number.isInteger(bits) || bits < 16 || bits % 2 !== 0) {
+    throw new RangeError(`invalid quiz size: ${bits}`);
   }
-  return i;
-};
-
-const generateRandomNumber = (bitLength: number): bigint => {
-  if (bitLength > 64) {
-    throw new Error("generateRandomNumber: bitLength > 64");
+  const half = bits / 2;
+  for (;;) {
+    // OpenSSL sets the top two bits of the primes it generates, so p * q normally has
+    // exactly `bits` bits; the check below keeps that a guarantee rather than an assumption.
+    const p = crypto.generatePrimeSync(half, { bigint: true });
+    const q = crypto.generatePrimeSync(half, { bigint: true });
+    if (p === q) {
+      continue;
+    }
+    const n = p * q;
+    if (n.toString(2).length !== bits) {
+      continue;
+    }
+    return {
+      p: String(p),
+      q: String(q),
+      n: String(n),
+      bits,
+    };
   }
-  const arr = new BigUint64Array(1);
-  let bl = 0;
-  do {
-    crypto.randomFillSync(arr);
-    bl = getBitLength(arr[0] as bigint);
-  } while (bl < bitLength);
-  const n = (arr[0] as bigint) >> BigInt(bl - bitLength);
-  return n;
-};
-
-const generateRandomPrime = (bitLength: number): bigint => {
-  let n = 0n;
-  do {
-    n = generateRandomNumber(bitLength);
-  } while (!isPrime(n));
-  return n;
-};
-
-export const generatePrimeQuiz = (): FactorizationQuiz => {
-  const p = generateRandomPrime(PRIME_BITS);
-  const q = generateRandomPrime(PRIME_BITS);
-  return {
-    p: String(p),
-    q: String(q),
-    n: String(p * q),
-  };
 };

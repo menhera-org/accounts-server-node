@@ -1,23 +1,27 @@
 
-const WORKER_PATH = '/assets/factorization/elliptic-curve/worker.js';
+import { factorize } from './factorization/rusqsieve/factorize.js';
 
-const factor = async (n) => {
-  const bigN = BigInt(n);
-  return await new Promise((resolve, reject) => {
-    const worker = new Worker(WORKER_PATH);
-    worker.onmessage = (ev) => {
-      if (ev.data === true) {
-        worker.postMessage(bigN);
-        console.log('factorization started');
-        return;
-      }
-      worker.terminate();
-      resolve(ev.data);
-    };
-    worker.onerror = (ev) => {
-      reject(ev);
-    };
-  });
+// Solves the login puzzle: factors the balanced semiprime the server issued, using the
+// rusqsieve quadratic sieve across a pool of Web Workers. Resolves to the prime factors
+// as decimal strings.
+const factor = async (n, report) => {
+  console.log('factorization started');
+  const primes = await factorize(n, { report });
+  console.log('factorization finished');
+  return primes.map((prime) => prime.toString());
+};
+
+const describeProgress = (status) => {
+  switch (status.phase) {
+    case 'boot':
+      return `Preparing the login puzzle (${status.workers} workers)…`;
+    case 'sieving':
+      return `Solving the ${status.bits}-bit login puzzle: ${status.relations}/${status.target} relations, ${Math.round(status.elapsedSeconds)}s elapsed…`;
+    case 'linalg':
+      return 'Almost done…';
+    default:
+      return 'Solving the login puzzle…';
+  }
 };
 
 const loginFormForm = document.querySelector('#login-form-form');
@@ -97,7 +101,9 @@ if (!inputQuizValue) {
   throw new Error('Quiz input not found.');
 } else {
   const n = inputQuizValue;
-  factor(n).then((factors) => {
+  factor(n, (status) => {
+    loginFormStatus.textContent = describeProgress(status);
+  }).then((factors) => {
     loginFormInputsPrototype.remove();
     const loginFormInputs = createFormInputs(factors.join(','), passwordId);
     loginFormPlaceholder.textContent = '';
